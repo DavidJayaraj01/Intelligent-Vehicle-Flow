@@ -408,34 +408,31 @@ const QueueDetection: React.FC = () => {
                     </Typography>
                     <Card sx={{ bgcolor: '#0f172a', overflow: 'hidden' }}>
                       {result.isVideo ? (
-                        <Box sx={{ width: '100%', bgcolor: '#000', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-                          <video
-                            key={result.imageUrl}
+                        <Box>
+                          <Box 
+                            component="iframe"
                             src={result.imageUrl}
-                            controls
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            preload="auto"
-                            style={{
-                              maxWidth: '100%',
-                              maxHeight: 400,
-                              width: 'auto',
-                              height: 'auto'
-                            }}
-                            onError={(e: any) => {
-                              console.error('Video load error:', e);
-                              console.error('Video src:', result.imageUrl);
-                              console.error('Error details:', e.target.error);
-                            }}
-                            onLoadedData={() => {
-                              console.log('Video data loaded');
-                            }}
-                            onCanPlay={() => {
-                              console.log('Video can play - ready!');
+                            sx={{
+                              width: '100%',
+                              height: 400,
+                              border: 'none',
+                              bgcolor: '#000'
                             }}
                           />
+                          <Box sx={{ p: 2, bgcolor: '#1e293b', textAlign: 'center' }}>
+                            <Button
+                              variant="contained"
+                              href={result.imageUrl}
+                              target="_blank"
+                              download="queue_detection_result.mp4"
+                              sx={{
+                                bgcolor: '#0ea5e9',
+                                '&:hover': { bgcolor: '#0284c7' },
+                              }}
+                            >
+                              Open Video in New Tab
+                            </Button>
+                          </Box>
                         </Box>
                       ) : (
                         <img
