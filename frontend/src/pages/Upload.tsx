@@ -230,11 +230,8 @@ const Upload: React.FC = () => {
           transition: 'margin-left 0.3s',
           bgcolor: '#000000',
           minHeight: '100vh',
-          display: 'flex',
-          justifyContent: 'center',
         }}
       >
-        <Box sx={{ maxWidth: 1400, width: '100%', px: { xs: 2, sm: 3, md: 4 } }}>
         <Layout>
           {/* Hero Section */}
           <Box sx={{ mb: 8 }}>
@@ -831,7 +828,6 @@ const Upload: React.FC = () => {
             </Box>
           )}
         </Layout>
-        </Box>
       </Box>
     </Box>
   );

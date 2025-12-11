@@ -24,6 +24,7 @@ import {
   Delete,
   Download,
   Timeline,
+  Menu as MenuIcon,
 } from '@mui/icons-material';
 
 interface QueueStatistics {
@@ -210,17 +211,34 @@ const QueueDetection: React.FC = () => {
       <Box
         sx={{
           flexGrow: 1,
-          marginLeft: sidebarOpen ? '280px' : '64px',
+          marginLeft: { xs: 0, md: sidebarOpen ? '280px' : '64px' },
           transition: 'margin-left 0.2s ease-in-out',
           minHeight: '100vh',
           bgcolor: '#0a0a0a',
-          display: 'flex',
-          justifyContent: 'center',
+          p: { xs: 2, sm: 3, md: 4 },
         }}
       >
-        <Box sx={{ maxWidth: 1400, width: '100%', p: { xs: 2, sm: 3, md: 4 } }}>
+        {/* Mobile Menu Button */}
+        <IconButton
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          sx={{
+            display: { xs: 'flex', md: 'none' },
+            position: 'fixed',
+            top: 16,
+            left: 16,
+            zIndex: 1200,
+            bgcolor: '#1e293b',
+            color: '#ffffff',
+            '&:hover': {
+              bgcolor: '#334155',
+            },
+          }}
+        >
+          <MenuIcon />
+        </IconButton>
+
         {/* Header */}
-        <Box sx={{ mb: 8 }}>
+        <Box sx={{ mb: { xs: 4, sm: 6, md: 8 } }}>
           <Typography
             variant="h2"
             sx={{
@@ -667,7 +685,6 @@ const QueueDetection: React.FC = () => {
             </Grid>
           )}
         </Grid>
-        </Box>
       </Box>
     </Box>
   );
