@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import Sidebar from '../components/Sidebar';
 import { cn } from '@/lib/utils';
+import { apiUrl } from '@/lib/api';
 
 interface Detection {
   bbox: [number, number, number, number];
@@ -145,9 +146,10 @@ const Upload: React.FC = () => {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
       const endpoint = tabValue === 0 
-        ? 'http://localhost:8000/api/v1/detect/image'
-        : 'http://localhost:8000/api/v1/detect/video';
+        ? `${API_BASE}/detect/image`
+        : `${API_BASE}/detect/video`;
 
       const response = await fetch(endpoint, {
         method: 'POST',

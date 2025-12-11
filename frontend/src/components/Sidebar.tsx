@@ -51,7 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
       )}>
         {open && (
           <div className="flex items-center gap-3">
-            <img src="/image.png" alt="VFA Logo" className="w-10 h-10 rounded-lg object-cover" />
+            <img src="/image.png" alt="VFA Logo" width="40" height="40" className="w-10 h-10 rounded-lg object-cover" />
             <div>
               <div className="text-sm font-bold leading-none mb-1 font-mono">VFA</div>
               <div className="text-xs text-green-400 leading-none font-mono">VEHICLE FLOW</div>

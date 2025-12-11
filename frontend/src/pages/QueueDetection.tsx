@@ -96,7 +96,8 @@ const QueueDetection: React.FC = () => {
         });
       }, 200);
 
-      const response = await fetch('http://localhost:8000/api/v1/queue/detect', {
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+      const response = await fetch(`${API_BASE}/queue/detect`, {
         method: 'POST',
         body: formData,
       });
