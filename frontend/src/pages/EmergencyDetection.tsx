@@ -189,7 +189,7 @@ const EmergencyDetection: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0a0e1a' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0a0a0a' }}>
       <Sidebar
         open={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
@@ -239,7 +239,7 @@ const EmergencyDetection: React.FC = () => {
               gap: 2,
             }}
           >
-            <LocalHospital sx={{ color: '#ef4444', fontSize: { xs: '2rem', md: '3rem' } }} />
+            <LocalHospital sx={{ color: '#3b82f6', fontSize: { xs: '2rem', md: '3rem' } }} />
             Emergency Detection
           </Typography>
           <Typography 
@@ -265,13 +265,13 @@ const EmergencyDetection: React.FC = () => {
                 borderRadius: '20px',
                 background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
                 backdropFilter: 'blur(16px)',
-                border: '1px solid rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(14, 165, 233, 0.15)',
                 height: '100%',
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
                 transition: 'all 0.3s ease',
                 '&:hover': {
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  boxShadow: '0 12px 48px rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(14, 165, 233, 0.3)',
+                  boxShadow: '0 12px 48px rgba(14, 165, 233, 0.15)',
                 },
               }}
             >
@@ -307,7 +307,7 @@ const EmergencyDetection: React.FC = () => {
                       bgcolor: '#0f172a',
                       transition: 'all 0.3s',
                       '&:hover': {
-                        borderColor: '#ef4444',
+                        borderColor: '#0ea5e9',
                         bgcolor: '#1e293b',
                       },
                     }}
@@ -349,9 +349,9 @@ const EmergencyDetection: React.FC = () => {
 
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                       {selectedFile.type.startsWith('video/') ? (
-                        <VideoLibrary sx={{ color: '#ef4444', mr: 1 }} />
+                        <VideoLibrary sx={{ color: '#0ea5e9', mr: 1 }} />
                       ) : (
-                        <ImageIcon sx={{ color: '#ef4444', mr: 1 }} />
+                        <ImageIcon sx={{ color: '#0ea5e9', mr: 1 }} />
                       )}
                       <Typography variant="body2" sx={{ color: '#cbd5e1', flex: 1 }}>
                         {selectedFile.name}
@@ -362,7 +362,7 @@ const EmergencyDetection: React.FC = () => {
                       <IconButton
                         size="small"
                         onClick={handleClearFile}
-                        sx={{ color: '#ef4444' }}
+                        sx={{ color: '#0ea5e9' }}
                       >
                         <Delete />
                       </IconButton>
@@ -375,8 +375,8 @@ const EmergencyDetection: React.FC = () => {
                       disabled={isProcessing}
                       startIcon={<LocalHospital />}
                       sx={{
-                        bgcolor: '#ef4444',
-                        '&:hover': { bgcolor: '#dc2626' },
+                        bgcolor: '#0ea5e9',
+                        '&:hover': { bgcolor: '#0284c7' },
                         py: 1.5,
                         fontWeight: 600,
                       }}
@@ -389,7 +389,7 @@ const EmergencyDetection: React.FC = () => {
                         sx={{
                           mt: 2,
                           bgcolor: '#1e293b',
-                          '& .MuiLinearProgress-bar': { bgcolor: '#ef4444' },
+                          '& .MuiLinearProgress-bar': { bgcolor: '#0ea5e9' },
                         }}
                       />
                     )}
@@ -413,13 +413,13 @@ const EmergencyDetection: React.FC = () => {
                 borderRadius: '20px',
                 background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
                 backdropFilter: 'blur(16px)',
-                border: '1px solid rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(14, 165, 233, 0.15)',
                 height: '100%',
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
                 transition: 'all 0.3s ease',
                 '&:hover': {
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  boxShadow: '0 12px 48px rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(14, 165, 233, 0.3)',
+                  boxShadow: '0 12px 48px rgba(14, 165, 233, 0.15)',
                 },
               }}
             >
@@ -476,8 +476,8 @@ const EmergencyDetection: React.FC = () => {
                                 target="_blank"
                                 download="emergency_detection_result.mp4"
                                 sx={{
-                                  bgcolor: '#ef4444',
-                                  '&:hover': { bgcolor: '#dc2626' },
+                                  bgcolor: '#0ea5e9',
+                                  '&:hover': { bgcolor: '#0284c7' },
                                 }}
                               >
                                 Open Video in New Tab
@@ -503,7 +503,7 @@ const EmergencyDetection: React.FC = () => {
                       <Grid container spacing={2}>
                         <Grid size={{ xs: 6 }}>
                           <Card sx={{ bgcolor: '#0f172a', p: 2, textAlign: 'center' }}>
-                            <Typography variant="h3" sx={{ color: '#ef4444', fontWeight: 700 }}>
+                            <Typography variant="h3" sx={{ color: '#0ea5e9', fontWeight: 700 }}>
                               {result.statistics.totalDetections}
                             </Typography>
                             <Typography variant="caption" sx={{ color: '#94a3b8' }}>
