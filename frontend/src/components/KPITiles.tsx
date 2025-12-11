@@ -14,22 +14,25 @@ const KPITiles: React.FC<KPITilesProps> = ({ totalEvents, avgDwellTime, queueLen
       title: 'Total Vehicles',
       value: totalEvents.toLocaleString(),
       icon: <DirectionsCar sx={{ fontSize: 40 }} />,
-      color: '#1976d2',
-      bgColor: '#e3f2fd',
+      color: '#0ea5e9',
+      bgColor: 'rgba(14, 165, 233, 0.1)',
+      trend: '+2.5%',
     },
     {
       title: 'Avg Dwell Time',
       value: `${avgDwellTime.toFixed(1)}s`,
       icon: <Timer sx={{ fontSize: 40 }} />,
-      color: '#ed6c02',
-      bgColor: '#fff4e6',
+      color: '#f59e0b',
+      bgColor: 'rgba(245, 158, 11, 0.1)',
+      trend: '-1.2%',
     },
     {
       title: 'Queue Length',
       value: queueLength.toString(),
       icon: <Queue sx={{ fontSize: 40 }} />,
-      color: '#d32f2f',
-      bgColor: '#ffebee',
+      color: '#ef4444',
+      bgColor: 'rgba(239, 68, 68, 0.1)',
+      trend: '+0.8%',
     },
   ];
 
@@ -37,25 +40,68 @@ const KPITiles: React.FC<KPITilesProps> = ({ totalEvents, avgDwellTime, queueLen
     <Grid container spacing={3}>
       {kpis.map((kpi, index) => (
         <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
-          <Card sx={{ height: '100%' }}>
+          <Card 
+            sx={{ 
+              height: '100%',
+              background: 'rgba(255, 255, 255, 0.03)',
+              backdropFilter: 'none',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '16px',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: 'none',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                borderColor: `rgba(255, 255, 255, 0.15)`,
+                boxShadow: `0 8px 24px rgba(0, 0, 0, 0.3)`,
+              }
+            }}
+          >
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography color="text.secondary" gutterBottom variant="overline">
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography 
+                    color="text.secondary" 
+                    gutterBottom 
+                    variant="overline"
+                    sx={{ 
+                      color: 'rgba(255, 255, 255, 0.5)',
+                      fontWeight: 600,
+                      letterSpacing: '0.5px'
+                    }}
+                  >
                     {kpi.title}
                   </Typography>
-                  <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
+                  <Typography 
+                    variant="h4" 
+                    component="div" 
+                    sx={{ 
+                      fontWeight: 700,
+                      color: '#ffffff',
+                      mb: 1
+                    }}
+                  >
                     {kpi.value}
+                  </Typography>
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: kpi.color,
+                      fontWeight: 600
+                    }}
+                  >
+                    {kpi.trend} from last hour
                   </Typography>
                 </Box>
                 <Box
                   sx={{
                     backgroundColor: kpi.bgColor,
-                    borderRadius: 2,
+                    borderRadius: '12px',
                     p: 1.5,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    minWidth: 70,
+                    minHeight: 70,
                   }}
                 >
                   {React.cloneElement(kpi.icon, { sx: { color: kpi.color, fontSize: 40 } })}

@@ -1,9 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { isAuthenticated } from './utils/auth';
-import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Upload from './pages/Upload';
 
@@ -58,55 +55,31 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundImage: 'none',
+          backgroundColor: 'rgba(30, 41, 59, 0.8)',
+          backdropFilter: 'blur(10px)',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 600,
         },
       },
     },
   },
 });
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-}
-
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const authenticated = isAuthenticated();
-  return authenticated ? <>{children}</> : <Navigate to="/" />;
-};
-
 function App() {
-  const [authenticated, setAuthenticated] = useState(isAuthenticated());
-
-  useEffect(() => {
-    // Check authentication status periodically
-    const interval = setInterval(() => {
-      setAuthenticated(isAuthenticated());
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
         <Routes>
-          <Route path="/" element={authenticated ? <Navigate to="/dashboard" /> : <Login />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/upload"
-            element={
-              <ProtectedRoute>
-                <Upload />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/upload" element={<Upload />} />
         </Routes>
       </Router>
     </ThemeProvider>

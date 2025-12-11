@@ -74,44 +74,80 @@ const ActionModal: React.FC<ActionModalProps> = ({ open, onClose, recommendation
   if (!recommendation) return null;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="sm" 
+      fullWidth
+      PaperProps={{
+        sx: {
+          background: 'rgba(0, 0, 0, 0.95)',
+          backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6)',
+        }
+      }}
+    >
+      <DialogTitle sx={{ color: '#ffffff', fontWeight: 700 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           Action Recommendation
           <Chip
             label={`${(recommendation.confidence * 100).toFixed(0)}% Confidence`}
-            color={recommendation.confidence > 0.8 ? 'success' : 'warning'}
+            sx={{
+              backgroundColor: recommendation.confidence > 0.8 ? 'rgba(34, 197, 94, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+              color: recommendation.confidence > 0.8 ? '#22c55e' : '#f59e0b',
+              fontWeight: 600,
+            }}
             size="small"
           />
         </Box>
       </DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ color: '#ffffff' }}>
         {success ? (
-          <Alert severity="success" sx={{ mb: 2 }}>
+          <Alert 
+            severity="success" 
+            sx={{ 
+              mb: 2,
+              bgcolor: 'rgba(34, 197, 94, 0.1)',
+              color: '#22c55e',
+              '& .MuiAlert-icon': { color: '#22c55e' }
+            }}
+          >
             Action submitted successfully!
           </Alert>
         ) : (
           <>
-            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold', mt: 1 }}>
-              Recommended Action: {recommendation.type}
+            <Typography 
+              variant="subtitle1" 
+              gutterBottom 
+              sx={{ fontWeight: 700, mt: 2, color: '#f8fafc' }}
+            >
+              {recommendation.type}
             </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
+            <Typography variant="body1" sx={{ color: '#94a3b8', mb: 2 }}>
               {recommendation.description}
             </Typography>
 
             {recommendation.camera_id && (
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Camera: {recommendation.camera_id}
+              <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
+                <strong>Camera:</strong> {recommendation.camera_id}
               </Typography>
             )}
 
             {Object.keys(recommendation.params).length > 0 && (
-              <Box sx={{ mt: 2, mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-                <Typography variant="subtitle2" gutterBottom>
+              <Box sx={{ 
+                mt: 2, 
+                mb: 2, 
+                p: 2, 
+                bgcolor: 'rgba(14, 165, 233, 0.1)',
+                border: '1px solid rgba(14, 165, 233, 0.2)',
+                borderRadius: '8px'
+              }}>
+                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 700, color: '#0ea5e9' }}>
                   Parameters:
                 </Typography>
                 {Object.entries(recommendation.params).map(([key, value]) => (
-                  <Typography key={key} variant="body2">
+                  <Typography key={key} variant="body2" sx={{ color: '#94a3b8' }}>
                     <strong>{key}:</strong> {JSON.stringify(value)}
                   </Typography>
                 ))}
@@ -119,7 +155,15 @@ const ActionModal: React.FC<ActionModalProps> = ({ open, onClose, recommendation
             )}
 
             {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 2,
+                  bgcolor: 'rgba(239, 68, 68, 0.1)',
+                  color: '#fca5a5',
+                  '& .MuiAlert-icon': { color: '#fca5a5' }
+                }}
+              >
                 {error}
               </Alert>
             )}
@@ -130,14 +174,37 @@ const ActionModal: React.FC<ActionModalProps> = ({ open, onClose, recommendation
               value={operatorId}
               onChange={(e) => setOperatorId(e.target.value)}
               variant="outlined"
-              sx={{ mt: 2 }}
+              sx={{ 
+                mt: 2,
+                '& .MuiOutlinedInput-root': {
+                  color: '#f8fafc',
+                  '& fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#0ea5e9',
+                  },
+                },
+                '& .MuiInputBase-input::placeholder': {
+                  color: '#64748b',
+                  opacity: 1,
+                },
+              }}
               autoFocus
             />
           </>
         )}
       </DialogContent>
-      <DialogActions>
-        <Button onClick={handleReject} startIcon={<Cancel />} disabled={loading}>
+      <DialogActions sx={{ p: 2, gap: 1 }}>
+        <Button 
+          onClick={handleReject} 
+          startIcon={<Cancel />} 
+          disabled={loading}
+          sx={{
+            color: '#94a3b8',
+            '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)' }
+          }}
+        >
           Reject
         </Button>
         <Button
@@ -145,6 +212,11 @@ const ActionModal: React.FC<ActionModalProps> = ({ open, onClose, recommendation
           variant="contained"
           startIcon={<CheckCircle />}
           disabled={loading || success}
+          sx={{
+            bgcolor: '#0ea5e9',
+            color: '#fff',
+            '&:hover': { bgcolor: '#0284c7' }
+          }}
         >
           {loading ? 'Submitting...' : 'Approve'}
         </Button>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, Typography, TextField, Button, Box, IconButton } from '@mui/material';
+import { Card, CardContent, Typography, TextField, Button, Box, IconButton, Alert } from '@mui/material';
 import { PlayArrow, Pause, Replay } from '@mui/icons-material';
 import { getTracks } from '../services/api';
 
@@ -27,15 +27,15 @@ const ReplayPanel: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
 
-  const CANVAS_WIDTH = 800;
-  const CANVAS_HEIGHT = 600;
+  const CANVAS_WIDTH = 600;
+  const CANVAS_HEIGHT = 400;
   const FRAME_DELAY = 100; // ms between frames
 
   const classColors: Record<string, string> = {
-    car: '#1976d2',
-    truck: '#d32f2f',
-    bus: '#ed6c02',
-    bike: '#2e7d32',
+    car: '#0ea5e9',
+    truck: '#ef4444',
+    bus: '#f59e0b',
+    bike: '#10b981',
   };
 
   const fetchTrack = async () => {
@@ -72,12 +72,12 @@ const ReplayPanel: React.FC = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
-    ctx.fillStyle = '#f5f5f5';
+    // Clear canvas with dark background
+    ctx.fillStyle = '#1a1f2e';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     // Draw grid
-    ctx.strokeStyle = '#e0e0e0';
+    ctx.strokeStyle = 'rgba(94, 109, 126, 0.3)';
     ctx.lineWidth = 1;
     for (let i = 0; i < CANVAS_WIDTH; i += 50) {
       ctx.beginPath();
@@ -96,29 +96,45 @@ const ReplayPanel: React.FC = () => {
 
     const event = events[frameIndex];
     const bbox = event.bbox;
-    const color = classColors[event.class] || '#666666';
+    const color = classColors[event.class] || '#94a3b8';
 
-    // Draw bounding box
+    // Draw bounding box with glow
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
     ctx.strokeStyle = color;
     ctx.lineWidth = 3;
     ctx.strokeRect(bbox.x, bbox.y, bbox.width, bbox.height);
+    ctx.shadowColor = 'transparent';
 
     // Fill with semi-transparent color
-    ctx.fillStyle = color + '20';
+    ctx.fillStyle = color + '30';
     ctx.fillRect(bbox.x, bbox.y, bbox.width, bbox.height);
 
     // Draw label
     ctx.fillStyle = color;
-    ctx.fillRect(bbox.x, bbox.y - 25, 150, 25);
-    ctx.fillStyle = 'white';
-    ctx.font = '14px Arial';
-    ctx.fillText(`${event.class} (${(event.confidence * 100).toFixed(0)}%)`, bbox.x + 5, bbox.y - 7);
+    ctx.globalAlpha = 0.9;
+    ctx.fillRect(bbox.x, bbox.y - 28, 180, 28);
+    ctx.globalAlpha = 1.0;
+    
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 13px Inter, Roboto, sans-serif';
+    ctx.fillText(`${event.class.toUpperCase()} ${(event.confidence * 100).toFixed(0)}%`, bbox.x + 5, bbox.y - 10);
 
     // Draw frame info
-    ctx.fillStyle = '#000';
-    ctx.font = '16px Arial';
-    ctx.fillText(`Frame: ${frameIndex + 1}/${events.length}`, 10, 30);
-    ctx.fillText(`Time: ${new Date(event.timestamp).toLocaleTimeString()}`, 10, 55);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.fillRect(10, 10, 220, 60);
+    ctx.strokeStyle = 'rgba(14, 165, 233, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(10, 10, 220, 60);
+
+    ctx.fillStyle = '#0ea5e9';
+    ctx.font = 'bold 13px Inter, Roboto, sans-serif';
+    ctx.fillText(`Frame: ${frameIndex + 1}/${events.length}`, 18, 28);
+    
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '11px Inter, Roboto, sans-serif';
+    ctx.fillText(new Date(event.timestamp).toLocaleTimeString(), 18, 45);
+    ctx.fillText(new Date(event.timestamp).toLocaleDateString(), 18, 58);
   };
 
   useEffect(() => {
@@ -160,51 +176,126 @@ const ReplayPanel: React.FC = () => {
   };
 
   return (
-    <Card>
+    <Card 
+      elevation={0}
+      sx={{
+        background: 'rgba(255, 255, 255, 0.03)',
+        backdropFilter: 'none',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: '16px',
+        boxShadow: 'none',
+        height: '100%',
+      }}
+    >
       <CardContent>
-        <Typography variant="h6" gutterBottom>
+        <Typography 
+          variant="h6" 
+          gutterBottom
+          sx={{ 
+            fontWeight: 700,
+            color: '#ffffff',
+            mb: 3
+          }}
+        >
           Track Replay
         </Typography>
 
-        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
           <TextField
             label="Track ID"
             value={trackId}
             onChange={(e) => setTrackId(e.target.value)}
             size="small"
-            sx={{ flex: 1 }}
+            sx={{ 
+              flex: 1,
+              '& .MuiOutlinedInput-root': {
+                color: '#f8fafc',
+                '& fieldset': {
+                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#0ea5e9',
+                },
+              }
+            }}
             onKeyPress={(e) => e.key === 'Enter' && fetchTrack()}
           />
-          <Button variant="contained" onClick={fetchTrack} disabled={loading}>
+          <Button 
+            variant="contained" 
+            onClick={fetchTrack} 
+            disabled={loading}
+            sx={{
+              bgcolor: '#0ea5e9',
+              color: '#fff',
+              '&:hover': { bgcolor: '#0284c7' }
+            }}
+          >
             {loading ? 'Loading...' : 'Load Track'}
           </Button>
         </Box>
 
         {error && (
-          <Typography color="error" sx={{ mb: 2 }}>
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 2,
+              bgcolor: 'rgba(239, 68, 68, 0.1)',
+              color: '#fca5a5',
+              '& .MuiAlert-icon': { color: '#fca5a5' }
+            }}
+            onClose={() => setError('')}
+          >
             {error}
-          </Typography>
+          </Alert>
         )}
 
         {events.length > 0 && (
           <>
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 2 }}>
-              <IconButton onClick={handlePlayPause} color="primary">
+            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 3 }}>
+              <IconButton 
+                onClick={handlePlayPause} 
+                sx={{
+                  bgcolor: 'rgba(14, 165, 233, 0.1)',
+                  color: '#0ea5e9',
+                  '&:hover': {
+                    bgcolor: 'rgba(14, 165, 233, 0.2)',
+                  }
+                }}
+              >
                 {isPlaying ? <Pause /> : <PlayArrow />}
               </IconButton>
-              <IconButton onClick={handleReset} color="secondary">
+              <IconButton 
+                onClick={handleReset}
+                sx={{
+                  bgcolor: 'rgba(99, 102, 241, 0.1)',
+                  color: '#6366f1',
+                  '&:hover': {
+                    bgcolor: 'rgba(99, 102, 241, 0.2)',
+                  }
+                }}
+              >
                 <Replay />
               </IconButton>
             </Box>
 
-            <Box sx={{ display: 'flex', justifyContent: 'center', border: '2px solid #e0e0e0', borderRadius: 1 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              border: '1px solid rgba(255, 255, 255, 0.1)', 
+              borderRadius: '8px',
+              overflow: 'hidden'
+            }}>
               <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
             </Box>
           </>
         )}
 
         {events.length === 0 && !loading && !error && (
-          <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+          <Typography 
+            color="text.secondary" 
+            align="center" 
+            sx={{ py: 4, color: '#64748b' }}
+          >
             Enter a track ID to view replay
           </Typography>
         )}

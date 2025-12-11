@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Grid } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import { removeApiKey } from '../utils/auth';
+import { Box, Grid, Alert } from '@mui/material';
 import { getEvents, getMetrics, getMetricsTimeSeries } from '../services/api';
 import wsService from '../services/websocket';
 import KPITiles from './KPITiles';
@@ -28,7 +26,6 @@ interface Recommendation {
 }
 
 const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
   const [metrics, setMetrics] = useState<Metrics>({
     total_events: 0,
     avg_dwell_time: 0,
@@ -42,9 +39,11 @@ const Dashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedCamera, setSelectedCamera] = useState<string>('cam01');
   const [detections, setDetections] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
+      setError(null);
       // Fetch recent events
       const eventsResponse = await getEvents({ limit: 100 });
       setEvents(eventsResponse.data);
@@ -85,6 +84,7 @@ const Dashboard: React.FC = () => {
       setLoading(false);
     } catch (error) {
       console.error('Error fetching data:', error);
+      setError('Failed to load dashboard data. Please try again.');
       setLoading(false);
     }
   };
@@ -136,11 +136,6 @@ const Dashboard: React.FC = () => {
     };
   }, [selectedCamera]);
 
-  const handleLogout = () => {
-    removeApiKey();
-    navigate('/');
-  };
-
   const handleRefresh = () => {
     setLoading(true);
     fetchData();
@@ -157,7 +152,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       {/* Sidebar */}
       <Sidebar
         open={sidebarOpen}
@@ -171,14 +166,34 @@ const Dashboard: React.FC = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
           marginLeft: sidebarOpen ? '280px' : '72px',
           transition: 'margin-left 0.3s',
+          bgcolor: '#000000',
         }}
       >
         <Layout onRefresh={handleRefresh}>
+          {/* Error Alert */}
+          {error && (
+            <Alert 
+              severity="error" 
+              sx={{ 
+                mb: 4,
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '12px',
+                color: '#ffffff',
+                '& .MuiAlert-icon': {
+                  color: '#ef4444'
+                }
+              }}
+              onClose={() => setError(null)}
+            >
+              {error}
+            </Alert>
+          )}
+
           {/* Camera Feed */}
-          <Box sx={{ mb: 4 }}>
+          <Box sx={{ mb: 6 }}>
             <CameraFeed
               cameraId={selectedCamera}
               cameraName={getCameraName(selectedCamera)}
@@ -187,7 +202,7 @@ const Dashboard: React.FC = () => {
           </Box>
 
           {/* KPI Tiles */}
-          <Box sx={{ mb: 4 }}>
+          <Box sx={{ mb: 6 }}>
             <KPITiles
               totalEvents={metrics.total_events}
               avgDwellTime={metrics.avg_dwell_time}
@@ -196,7 +211,7 @@ const Dashboard: React.FC = () => {
           </Box>
 
           {/* Chart and Replay Panel */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid container spacing={4} sx={{ mb: 6 }}>
             <Grid size={{ xs: 12, lg: 8 }}>
               <RealtimeChart data={chartData} />
             </Grid>

@@ -6,18 +6,15 @@ import {
   Button,
   Card,
   CardContent,
-  Grid,
   Chip,
   CircularProgress,
   Alert,
   IconButton,
   Tabs,
   Tab,
-  AppBar,
-  Toolbar,
   Stack,
   Divider,
-  Container,
+  Grid,
 } from '@mui/material';
 import {
   CloudUpload,
@@ -27,11 +24,10 @@ import {
   ZoomIn,
   ZoomOut,
   Refresh,
-  Menu as MenuIcon,
-  Logout,
   CheckCircle,
   Error as ErrorIcon,
 } from '@mui/icons-material';
+import Layout from '../components/Layout';
 import Sidebar from '../components/Sidebar';
 
 interface Detection {
@@ -70,16 +66,10 @@ const Upload: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    window.location.href = '/';
-  };
-
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
     
@@ -97,7 +87,6 @@ const Upload: React.FC = () => {
     setError(null);
     setDetectionResult(null);
 
-    // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setPreview(reader.result as string);
@@ -122,44 +111,29 @@ const Upload: React.FC = () => {
 
   const drawDetections = (imageElement: HTMLImageElement, detections: Detection[]) => {
     const canvas = canvasRef.current;
-    if (!canvas) {
-      console.error('Canvas ref not available');
-      return;
-    }
+    if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      console.error('Canvas context not available');
-      return;
-    }
+    if (!ctx) return;
 
-    // Set canvas size to match image
     canvas.width = imageElement.naturalWidth || imageElement.width;
     canvas.height = imageElement.naturalHeight || imageElement.height;
 
-    console.log('Canvas dimensions:', canvas.width, canvas.height);
-    console.log('Drawing detections:', detections.length);
-
-    // Draw image
     ctx.drawImage(imageElement, 0, 0);
 
-    // Draw detections
-    detections.forEach((detection, idx) => {
+    detections.forEach((detection) => {
       const [x1, y1, x2, y2] = detection.bbox;
       const width = x2 - x1;
       const height = y2 - y1;
-
-      console.log(`Detection ${idx}:`, { x1, y1, x2, y2, width, height, class: detection.class });
-
-      // Get color based on vehicle type
       const color = getVehicleTypeColor(detection.class);
 
-      // Draw bounding box
       ctx.strokeStyle = color;
       ctx.lineWidth = 4;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
       ctx.strokeRect(x1, y1, width, height);
+      ctx.shadowColor = 'transparent';
 
-      // Draw label background
       const label = `${detection.class} ${(detection.confidence * 100).toFixed(1)}%`;
       ctx.font = 'bold 18px Arial';
       const textMetrics = ctx.measureText(label);
@@ -169,12 +143,9 @@ const Upload: React.FC = () => {
       ctx.fillStyle = color;
       ctx.fillRect(x1, y1 - textHeight - padding, textMetrics.width + padding * 2, textHeight + padding);
 
-      // Draw label text
       ctx.fillStyle = '#fff';
       ctx.fillText(label, x1 + padding, y1 - padding);
     });
-    
-    console.log('Drawing complete');
   };
 
   const handleDetect = async () => {
@@ -201,36 +172,25 @@ const Upload: React.FC = () => {
       }
 
       const result: DetectionResult = await response.json();
-      console.log('Detection result:', result);
       
-      // Normalize the result to have a count field
       if (tabValue === 1 && result.total_detections !== undefined) {
         result.count = result.total_detections;
       }
       
       setDetectionResult(result);
 
-      // Draw detections on canvas for images - use setTimeout to ensure canvas is rendered
       if (tabValue === 0 && preview) {
-        console.log('Creating image for drawing detections');
         const img = new Image();
-        img.crossOrigin = 'anonymous'; // Enable CORS
+        img.crossOrigin = 'anonymous';
         img.onload = () => {
-          console.log('Image loaded, dimensions:', img.width, img.height);
-          // Wait for React to render the canvas element
           setTimeout(() => {
             drawDetections(img, result.detections);
           }, 100);
-        };
-        img.onerror = (err) => {
-          console.error('Image load error:', err);
-          setError('Failed to load image for detection visualization');
         };
         img.src = preview;
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Detection failed');
-      console.error('Detection error:', err);
     } finally {
       setLoading(false);
     }
@@ -242,20 +202,20 @@ const Upload: React.FC = () => {
 
   const getVehicleTypeColor = (vehicleType: string): string => {
     const colors: { [key: string]: string } = {
-      car: '#4caf50',
-      truck: '#ff9800',
-      bus: '#2196f3',
-      motorcycle: '#9c27b0',
-      bicycle: '#00bcd4',
-      bike: '#00bcd4',
-      person: '#f44336',
-      van: '#ff5722',
+      car: '#0ea5e9',
+      truck: '#f59e0b',
+      bus: '#6366f1',
+      motorcycle: '#ec4899',
+      bicycle: '#10b981',
+      bike: '#10b981',
+      person: '#ef4444',
+      van: '#f97316',
     };
-    return colors[vehicleType.toLowerCase()] || '#00ff00';
+    return colors[vehicleType.toLowerCase()] || '#94a3b8';
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', flexDirection: { xs: 'column', md: 'row' } }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar
         open={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
@@ -266,79 +226,51 @@ const Upload: React.FC = () => {
       <Box
         sx={{
           flexGrow: 1,
-          marginLeft: { xs: 0, md: sidebarOpen ? '280px' : '72px' },
+          marginLeft: sidebarOpen ? '280px' : '72px',
           transition: 'margin-left 0.3s',
-          width: { xs: '100%', md: 'auto' },
+          bgcolor: '#000000',
         }}
       >
-        {/* AppBar */}
-        <AppBar
-          position="static"
-          elevation={0}
-          sx={{
-            backgroundColor: '#1e293b',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
-          }}
-        >
-          <Toolbar>
-            <IconButton
-              edge="start"
-              color="inherit"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              sx={{ mr: 2 }}
-            >
-              <MenuIcon />
-            </IconButton>
+        <Layout>
+          {/* Hero Section */}
+          <Box sx={{ mb: 8 }}>
             <Typography 
-              variant="h6" 
+              variant="h2" 
               sx={{ 
-                flexGrow: 1, 
-                fontWeight: 600,
-                fontSize: { xs: '1rem', sm: '1.25rem' }
+                fontWeight: 900,
+                fontSize: { xs: '2.2rem', sm: '2.8rem', md: '3.8rem' },
+                color: '#ffffff',
+                mb: 2.5,
+                letterSpacing: '-1px',
               }}
             >
-              Vehicle Flow Analyzer
-            </Typography>
-            <IconButton color="inherit" onClick={handleLogout}>
-              <Logout />
-            </IconButton>
-          </Toolbar>
-        </AppBar>
-
-        <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 1, sm: 2, md: 3 } }}>
-          {/* Header */}
-          <Box sx={{ mb: { xs: 3, md: 4 }, textAlign: 'center', px: { xs: 1, sm: 2 } }}>
-            <Typography 
-              variant="h3" 
-              gutterBottom 
-              sx={{ 
-                fontWeight: 700, 
-                color: '#0ea5e9',
-                fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' }
-              }}
-            >
-              Vehicle Detection Upload
+              Vehicle Detection
             </Typography>
             <Typography 
-              variant="body1" 
-              color="text.secondary" 
+              variant="h5"
               sx={{ 
-                fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
-                px: { xs: 1, sm: 0 }
+                color: 'rgba(255, 255, 255, 0.6)',
+                fontWeight: 400,
+                fontSize: { xs: '1.05rem', md: '1.25rem' },
+                maxWidth: '700px',
+                lineHeight: 1.6,
               }}
             >
-              Upload images or videos to detect and analyze vehicles using AI
+              Upload and analyze images or videos with advanced AI-powered vehicle detection technology
             </Typography>
           </Box>
 
           {/* Tabs */}
           <Paper 
-            elevation={3} 
+            elevation={0}
             sx={{ 
-              mb: { xs: 3, md: 4 }, 
-              borderRadius: 2,
+              mb: 6, 
+              borderRadius: '16px',
+              background: 'rgba(255, 255, 255, 0.03)',
+              backdropFilter: 'none',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
               overflow: 'hidden',
-              background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+              boxShadow: 'none',
             }}
           >
             <Tabs 
@@ -348,58 +280,84 @@ const Upload: React.FC = () => {
               variant="fullWidth"
               sx={{
                 '& .MuiTab-root': {
-                  fontSize: { xs: '0.85rem', sm: '0.95rem', md: '1rem' },
-                  fontWeight: 600,
-                  minHeight: { xs: 56, sm: 64 },
+                  fontSize: '1.05rem',
+                  fontWeight: 700,
+                  minHeight: 72,
                   textTransform: 'none',
-                  px: { xs: 1, sm: 2 },
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    color: '#ffffff',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                  },
                 },
                 '& .Mui-selected': {
-                  color: '#0ea5e9 !important',
+                  color: '#ffffff !important',
+                },
+                '& .MuiTabs-indicator': {
+                  background: '#ffffff',
+                  height: 4,
+                  borderRadius: '2px',
                 },
               }}
             >
               <Tab 
-                icon={<ImageIcon sx={{ fontSize: { xs: 24, sm: 28 } }} />} 
+                icon={<ImageIcon sx={{ fontSize: 28, mr: 1 }} />} 
                 label="Image Upload" 
                 iconPosition="start" 
               />
               <Tab 
-                icon={<VideoLibrary sx={{ fontSize: { xs: 24, sm: 28 } }} />} 
+                icon={<VideoLibrary sx={{ fontSize: 28, mr: 1 }} />} 
                 label="Video Upload" 
                 iconPosition="start" 
               />
             </Tabs>
           </Paper>
 
-          <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
+          <Grid container spacing={5}>
             {/* Upload Section */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, lg: 6 }}>
               <Card 
-                elevation={4}
+                elevation={0}
                 sx={{ 
-                  borderRadius: 3,
-                  background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-                  border: '1px solid rgba(14, 165, 233, 0.1)',
+                  borderRadius: '20px',
+                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
+                  backdropFilter: 'blur(16px)',
+                  border: '1px solid rgba(14, 165, 233, 0.15)',
+                  height: '100%',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    border: '1px solid rgba(14, 165, 233, 0.3)',
+                    boxShadow: '0 12px 48px rgba(14, 165, 233, 0.15)',
+                  },
                 }}
               >
                 <CardContent sx={{ p: 4 }}>
-                  <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+                  <Stack direction="row" alignItems="center" spacing={3} sx={{ mb: 4 }}>
                     <Box 
                       sx={{ 
-                        p: 1.5, 
-                        borderRadius: 2, 
-                        bgcolor: 'rgba(14, 165, 233, 0.1)',
+                        p: 2, 
+                        borderRadius: '12px', 
+                        background: 'rgba(255, 255, 255, 0.05)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
-                      {tabValue === 0 ? <ImageIcon sx={{ color: '#0ea5e9', fontSize: 28 }} /> : <VideoLibrary sx={{ color: '#0ea5e9', fontSize: 28 }} />}
+                      {tabValue === 0 ? 
+                        <ImageIcon sx={{ color: '#ffffff', fontSize: 32 }} /> : 
+                        <VideoLibrary sx={{ color: '#ffffff', fontSize: 32 }} />
+                      }
                     </Box>
-                    <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                      {tabValue === 0 ? 'Upload Image' : 'Upload Video'}
-                    </Typography>
+                    <Box>
+                      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, color: '#ffffff' }}>
+                        {tabValue === 0 ? 'Upload Image' : 'Upload Video'}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                        {tabValue === 0 ? 'JPG, PNG, GIF' : 'MP4, AVI, MOV'}
+                      </Typography>
+                    </Box>
                   </Stack>
 
                   <input
@@ -412,403 +370,222 @@ const Upload: React.FC = () => {
 
                   <Box
                     sx={{
-                      border: '3px dashed rgba(14, 165, 233, 0.3)',
-                      borderRadius: 3,
-                      p: { xs: 4, sm: 5, md: 6 },
+                      border: '3px dashed rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      p: 6,
                       textAlign: 'center',
                       cursor: 'pointer',
-                      bgcolor: 'rgba(14, 165, 233, 0.05)',
-                      transition: 'all 0.3s ease',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       '&:hover': { 
-                        borderColor: '#0ea5e9', 
-                        bgcolor: 'rgba(14, 165, 233, 0.1)',
+                        borderColor: 'rgba(255, 255, 255, 0.4)',
+                        background: 'rgba(255, 255, 255, 0.05)',
                         transform: 'translateY(-2px)',
                       },
                     }}
                     onClick={handleUploadClick}
                   >
-                    <CloudUpload sx={{ fontSize: { xs: 60, sm: 70, md: 80 }, color: '#0ea5e9', mb: 2 }} />
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        mb: 2,
+                        animation: 'float 3s ease-in-out infinite',
+                        '@keyframes float': {
+                          '0%, 100%': { transform: 'translateY(0px)' },
+                          '50%': { transform: 'translateY(-10px)' },
+                        },
+                      }}
+                    >
+                      <CloudUpload sx={{ fontSize: 80, color: '#ffffff' }} />
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: '#ffffff' }}>
                       Click to select {tabValue === 0 ? 'an image' : 'a video'}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.85rem', sm: '1rem' } }}>
-                      {tabValue === 0 ? 'Supported: JPG, PNG, GIF' : 'Supported: MP4, AVI, MOV'}
+                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                      or drag and drop your file here
                     </Typography>
                   </Box>
 
-              {selectedFile && (
-                <Box sx={{ mt: 3 }}>
-                  <Paper 
-                    elevation={2}
-                    sx={{ 
-                      p: { xs: 2, sm: 2.5 }, 
-                      mb: 2, 
-                      bgcolor: 'rgba(14, 165, 233, 0.08)',
-                      border: '1px solid rgba(14, 165, 233, 0.2)',
-                      borderRadius: 2,
-                    }}
-                  >
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <CheckCircle sx={{ color: '#22c55e', fontSize: { xs: 28, sm: 32 } }} />
-                      <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                        <Typography 
-                          variant="subtitle1" 
-                          sx={{ 
-                            fontWeight: 600, 
-                            color: '#0ea5e9',
-                            fontSize: { xs: '0.9rem', sm: '1rem' },
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {selectedFile.name}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                          Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </Paper>
-
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                    <Button
-                      variant="contained"
-                      size="large"
-                      startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <CloudUpload />}
-                      onClick={handleDetect}
-                      disabled={loading}
-                      fullWidth
-                      sx={{
-                        py: { xs: 1.2, sm: 1.5 },
-                        fontSize: { xs: '0.9rem', sm: '1rem' },
-                        fontWeight: 600,
-                        background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
-                        '&:hover': {
-                          background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                        },
-                      }}
-                    >
-                      {loading ? 'Analyzing...' : 'Detect Vehicles'}
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      size="large"
-                      startIcon={<Delete />}
-                      onClick={handleClear}
-                      disabled={loading}
-                      sx={{
-                        py: { xs: 1.2, sm: 1.5 },
-                        fontSize: { xs: '0.9rem', sm: '1rem' },
-                        minWidth: { xs: '100%', sm: 'auto' },
-                        borderColor: 'rgba(239, 68, 68, 0.5)',
-                        color: '#ef4444',
-                        '&:hover': {
-                          borderColor: '#ef4444',
-                          bgcolor: 'rgba(239, 68, 68, 0.1)',
-                        },
-                      }}
-                    >
-                      Clear
-                    </Button>
-                  </Stack>
-                </Box>
-              )}
-
-              {error && (
-                <Alert 
-                  severity="error" 
-                  sx={{ mt: 3 }}
-                  icon={<ErrorIcon />}
-                >
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    {error}
-                  </Typography>
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Detection Results */}
-          {detectionResult && (
-            <Card 
-              elevation={4}
-              sx={{ 
-                mt: 3,
-                borderRadius: 3,
-                background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-                border: '1px solid rgba(34, 197, 94, 0.3)',
-              }}
-            >
-              <CardContent sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-                <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-                  <CheckCircle sx={{ color: '#22c55e', fontSize: { xs: 28, sm: 32 } }} />
-                  <Typography variant="h5" sx={{ fontWeight: 600, color: '#22c55e', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
-                    Detection Complete
-                  </Typography>
-                </Stack>
-
-                <Grid container spacing={{ xs: 2, sm: 3 }}>
-                  <Grid item xs={12} sm={4}>
-                    <Paper 
-                      elevation={0}
-                      sx={{ 
-                        p: { xs: 2, sm: 3 }, 
-                        textAlign: 'center',
-                        bgcolor: 'rgba(14, 165, 233, 0.1)',
-                        borderRadius: 2,
-                        border: '1px solid rgba(14, 165, 233, 0.2)',
-                      }}
-                    >
-                      <Typography variant="h3" sx={{ fontWeight: 700, color: '#0ea5e9', mb: 1, fontSize: { xs: '2rem', sm: '3rem' } }}>
-                        {detectionResult.count}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                        Vehicles Detected
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <Paper 
-                      elevation={0}
-                      sx={{ 
-                        p: { xs: 2, sm: 3 }, 
-                        textAlign: 'center',
-                        bgcolor: 'rgba(168, 85, 247, 0.1)',
-                        borderRadius: 2,
-                        border: '1px solid rgba(168, 85, 247, 0.2)',
-                      }}
-                    >
-                      <Typography variant="h3" sx={{ fontWeight: 700, color: '#a855f7', mb: 1, fontSize: { xs: '2rem', sm: '3rem' } }}>
-                        {detectionResult.processing_time.toFixed(2)}s
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                        Processing Time
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <Paper 
-                      elevation={0}
-                      sx={{ 
-                        p: { xs: 2, sm: 3 }, 
-                        textAlign: 'center',
-                        bgcolor: 'rgba(34, 197, 94, 0.1)',
-                        borderRadius: 2,
-                        border: '1px solid rgba(34, 197, 94, 0.2)',
-                      }}
-                    >
-                      <Typography variant="h3" sx={{ fontWeight: 700, color: '#22c55e', mb: 1, fontSize: { xs: '1.5rem', sm: '1.8rem' } }}>
-                        {detectionResult.image_size 
-                          ? `${detectionResult.image_size[0]}×${detectionResult.image_size[1]}`
-                          : detectionResult.video_size 
-                          ? `${detectionResult.video_size[0]}×${detectionResult.video_size[1]}`
-                          : 'N/A'}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                        Resolution
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                </Grid>
-
-                {/* Video-specific stats */}
-                {detectionResult.frames_processed && (
-                  <Box sx={{ mt: 3 }}>
-                    <Typography variant="subtitle2" sx={{ mb: 2, color: 'text.secondary', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-                      Video Analysis Details:
-                    </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={6} sm={3}>
-                        <Paper 
-                          elevation={0}
-                          sx={{ 
-                            p: { xs: 1.5, sm: 2 }, 
-                            textAlign: 'center',
-                            bgcolor: 'rgba(255, 255, 255, 0.05)',
-                            borderRadius: 1,
-                          }}
-                        >
-                          <Typography variant="h6" sx={{ fontWeight: 600, color: '#60a5fa', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                            {detectionResult.frames_processed}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
-                            Frames Analyzed
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                      <Grid item xs={6} sm={3}>
-                        <Paper 
-                          elevation={0}
-                          sx={{ 
-                            p: { xs: 1.5, sm: 2 }, 
-                            textAlign: 'center',
-                            bgcolor: 'rgba(255, 255, 255, 0.05)',
-                            borderRadius: 1,
-                          }}
-                        >
-                          <Typography variant="h6" sx={{ fontWeight: 600, color: '#60a5fa', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                            {detectionResult.fps}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
-                            Video FPS
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                      <Grid item xs={6} sm={3}>
-                        <Paper 
-                          elevation={0}
-                          sx={{ 
-                            p: { xs: 1.5, sm: 2 }, 
-                            textAlign: 'center',
-                            bgcolor: 'rgba(255, 255, 255, 0.05)',
-                            borderRadius: 1,
-                          }}
-                        >
-                          <Typography variant="h6" sx={{ fontWeight: 600, color: '#60a5fa', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                            {detectionResult.total_frames}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
-                            Total Frames
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                      <Grid item xs={6} sm={3}>
-                        <Paper 
-                          elevation={0}
-                          sx={{ 
-                            p: { xs: 1.5, sm: 2 }, 
-                            textAlign: 'center',
-                            bgcolor: 'rgba(255, 255, 255, 0.05)',
-                            borderRadius: 1,
-                          }}
-                        >
-                          <Typography variant="h6" sx={{ fontWeight: 600, color: '#60a5fa', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                            {detectionResult.sample_rate}x
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
-                            Sample Rate
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                    </Grid>
-
-                    {detectionResult.vehicle_counts && (
-                      <Box sx={{ mt: 2 }}>
-                        <Typography variant="subtitle2" sx={{ mb: 1.5, color: 'text.secondary', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-                          Vehicle Type Distribution:
-                        </Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
-                          {Object.entries(detectionResult.vehicle_counts).map(([type, count]) => (
-                            <Paper 
-                              key={type}
-                              elevation={0}
+                  {selectedFile && (
+                    <Box sx={{ mt: 4 }}>
+                      <Paper 
+                        elevation={0}
+                        sx={{ 
+                          p: 3, 
+                          mb: 3, 
+                          background: 'rgba(34, 197, 94, 0.1)',
+                          border: '1px solid rgba(34, 197, 94, 0.3)',
+                          borderRadius: '12px',
+                        }}
+                      >
+                        <Stack direction="row" alignItems="center" spacing={2}>
+                          <CheckCircle sx={{ color: '#22c55e', fontSize: 32, flexShrink: 0 }} />
+                          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                            <Typography 
+                              variant="subtitle1" 
                               sx={{ 
-                                px: 2, 
-                                py: 1,
-                                bgcolor: getVehicleTypeColor(type),
-                                borderRadius: 2,
+                                fontWeight: 700, 
+                                color: '#ffffff',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
                               }}
                             >
-                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#fff', fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
-                                {type}: {count}
-                              </Typography>
-                            </Paper>
-                          ))}
-                        </Box>
-                      </Box>
-                    )}
-                  </Box>
-                )}
+                              {selectedFile.name}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                              {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </Paper>
 
+                      <Stack direction="row" spacing={2}>
+                        <Button
+                          variant="contained"
+                          size="large"
+                          startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <CloudUpload />}
+                          onClick={handleDetect}
+                          disabled={loading}
+                          fullWidth
+                          sx={{
+                            py: 1.5,
+                            fontSize: '1rem',
+                            fontWeight: 700,
+                            background: '#ffffff',
+                            color: '#000000',
+                            boxShadow: 'none',
+                            '&:hover': {
+                              background: 'rgba(255, 255, 255, 0.9)',
+                              boxShadow: '0 8px 24px rgba(255, 255, 255, 0.2)',
+                              transform: 'translateY(-2px)',
+                            },
+                            textTransform: 'none',
+                          }}
+                        >
+                          {loading ? 'Analyzing...' : 'Detect Vehicles'}
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          size="large"
+                          startIcon={<Delete />}
+                          onClick={handleClear}
+                          disabled={loading}
+                          sx={{
+                            py: 1.5,
+                            fontSize: '1rem',
+                            fontWeight: 700,
+                            borderColor: 'rgba(255, 255, 255, 0.3)',
+                            color: '#ffffff',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.5)',
+                              background: 'rgba(255, 255, 255, 0.05)',
+                            },
+                            textTransform: 'none',
+                          }}
+                        >
+                          Clear
+                        </Button>
+                      </Stack>
+                    </Box>
+                  )}
 
-                <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
-
-                <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#0ea5e9', fontSize: { xs: '0.9rem', sm: '1rem' } }}>
-                  Detected Vehicles:
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 1, sm: 1.5 } }}>
-                  {detectionResult.detections.map((detection, idx) => (
-                    <Chip
-                      key={idx}
-                      label={`${detection.class} (${(detection.confidence * 100).toFixed(1)}%)`}
-                      sx={{
-                        bgcolor: getVehicleTypeColor(detection.class),
-                        color: '#fff',
-                        fontSize: { xs: '0.75rem', sm: '0.9rem' },
-                        fontWeight: 600,
-                        py: { xs: 2, sm: 2.5 },
-                        px: { xs: 0.5, sm: 1 },
+                  {error && (
+                    <Alert 
+                      severity="error" 
+                      sx={{ 
+                        mt: 3,
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        '& .MuiAlert-icon': { color: '#fca5a5' },
                       }}
-                    />
-                  ))}
-                </Box>
-              </CardContent>
-            </Card>
-          )}
-        </Grid>
+                      icon={<ErrorIcon />}
+                      onClose={() => setError(null)}
+                    >
+                      {error}
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
 
             {/* Preview Section */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, lg: 6 }}>
               <Card 
-                elevation={4}
+                elevation={0}
                 sx={{ 
-                  borderRadius: 3,
-                  background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-                  border: '1px solid rgba(14, 165, 233, 0.1)',
+                  borderRadius: '20px',
+                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
+                  backdropFilter: 'blur(16px)',
+                  border: '1px solid rgba(14, 165, 233, 0.15)',
                   height: '100%',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    border: '1px solid rgba(14, 165, 233, 0.3)',
+                    boxShadow: '0 12px 48px rgba(14, 165, 233, 0.15)',
+                  },
                 }}
               >
-                <CardContent sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
-                    <Stack direction="row" alignItems="center" spacing={2}>
+                <CardContent sx={{ p: 4, display: 'flex', flexDirection: 'column', height: '100%' }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                    <Stack direction="row" alignItems="center" spacing={3}>
                       <Box 
                         sx={{ 
-                          p: { xs: 1, sm: 1.5 }, 
-                          borderRadius: 2, 
-                          bgcolor: 'rgba(14, 165, 233, 0.1)',
+                          p: 2, 
+                          borderRadius: '12px', 
+                          background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(99, 102, 241, 0.2) 100%)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
                       >
-                        <ImageIcon sx={{ color: '#0ea5e9', fontSize: { xs: 24, sm: 28 } }} />
+                        <ImageIcon sx={{ color: '#0ea5e9', fontSize: 32 }} />
                       </Box>
-                      <Typography variant="h5" sx={{ fontWeight: 600, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
-                        Preview & Detections
-                      </Typography>
+                      <Box>
+                        <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                          Preview
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#64748b' }}>
+                          {preview ? 'File loaded' : 'Waiting for file'}
+                        </Typography>
+                      </Box>
                     </Stack>
                     {preview && (
-                      <Stack direction="row" spacing={0.5}>
+                      <Stack direction="row" spacing={1}>
                         <IconButton 
                           onClick={handleZoomOut} 
                           size="small"
                           sx={{ 
-                            bgcolor: 'rgba(14, 165, 233, 0.1)',
-                            '&:hover': { bgcolor: 'rgba(14, 165, 233, 0.2)' },
+                            background: 'rgba(14, 165, 233, 0.1)',
+                            color: '#0ea5e9',
+                            '&:hover': { background: 'rgba(14, 165, 233, 0.2)' },
                           }}
                         >
-                          <ZoomOut sx={{ color: '#0ea5e9', fontSize: { xs: 20, sm: 24 } }} />
+                          <ZoomOut />
                         </IconButton>
                         <IconButton 
                           onClick={handleResetZoom} 
                           size="small"
                           sx={{ 
-                            bgcolor: 'rgba(14, 165, 233, 0.1)',
-                            '&:hover': { bgcolor: 'rgba(14, 165, 233, 0.2)' },
+                            background: 'rgba(14, 165, 233, 0.1)',
+                            color: '#0ea5e9',
+                            '&:hover': { background: 'rgba(14, 165, 233, 0.2)' },
                           }}
                         >
-                          <Refresh sx={{ color: '#0ea5e9', fontSize: { xs: 20, sm: 24 } }} />
+                          <Refresh />
                         </IconButton>
                         <IconButton 
                           onClick={handleZoomIn} 
                           size="small"
                           sx={{ 
-                            bgcolor: 'rgba(14, 165, 233, 0.1)',
-                            '&:hover': { bgcolor: 'rgba(14, 165, 233, 0.2)' },
+                            background: 'rgba(14, 165, 233, 0.1)',
+                            color: '#0ea5e9',
+                            '&:hover': { background: 'rgba(14, 165, 233, 0.2)' },
                           }}
                         >
-                          <ZoomIn sx={{ color: '#0ea5e9', fontSize: { xs: 20, sm: 24 } }} />
+                          <ZoomIn />
                         </IconButton>
                       </Stack>
                     )}
@@ -816,22 +593,22 @@ const Upload: React.FC = () => {
 
                   <Box
                     sx={{
-                      minHeight: { xs: 300, sm: 400, md: 500 },
-                      bgcolor: 'rgba(0, 0, 0, 0.3)',
-                      borderRadius: 2,
+                      minHeight: 450,
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      borderRadius: '12px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       overflow: 'auto',
-                      position: 'relative',
-                      border: '2px solid rgba(14, 165, 233, 0.2)',
+                      border: '1px solid rgba(14, 165, 233, 0.2)',
+                      flexGrow: 1,
                     }}
                   >
                     {!preview && (
                       <Stack alignItems="center" spacing={2}>
-                        <ImageIcon sx={{ fontSize: { xs: 60, sm: 80 }, color: 'rgba(148, 163, 184, 0.3)' }} />
-                        <Typography variant="h6" color="text.secondary" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                          No file selected
+                        <ImageIcon sx={{ fontSize: 80, color: 'rgba(148, 163, 184, 0.2)' }} />
+                        <Typography variant="body1" color="text.secondary">
+                          No file selected yet
                         </Typography>
                       </Stack>
                     )}
@@ -839,12 +616,10 @@ const Upload: React.FC = () => {
                     {preview && tabValue === 0 && (
                       <Box 
                         sx={{ 
-                          position: 'relative', 
                           transform: `scale(${zoom})`, 
                           transformOrigin: 'center', 
                           p: 2,
-                          maxWidth: '100%',
-                          overflow: 'auto',
+                          width: '100%',
                         }}
                       >
                         {!detectionResult && (
@@ -856,7 +631,6 @@ const Upload: React.FC = () => {
                               height: 'auto',
                               display: 'block', 
                               borderRadius: '8px',
-                              objectFit: 'contain',
                             }}
                           />
                         )}
@@ -868,7 +642,6 @@ const Upload: React.FC = () => {
                               height: 'auto',
                               display: 'block', 
                               borderRadius: '8px',
-                              objectFit: 'contain',
                             }}
                           />
                         )}
@@ -881,8 +654,9 @@ const Upload: React.FC = () => {
                         controls
                         style={{ 
                           maxWidth: '100%', 
-                          transform: `scale(${zoom})`,
+                          maxHeight: '100%',
                           borderRadius: '8px',
+                          transform: `scale(${zoom})`,
                         }}
                       />
                     )}
@@ -893,15 +667,15 @@ const Upload: React.FC = () => {
                       severity="success" 
                       sx={{ 
                         mt: 3,
-                        bgcolor: 'rgba(34, 197, 94, 0.1)',
+                        background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%)',
                         border: '1px solid rgba(34, 197, 94, 0.3)',
                         '& .MuiAlert-icon': {
                           color: '#22c55e',
                         },
                       }}
                     >
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                        Detection complete! Found {detectionResult.count} vehicle(s) in {detectionResult.processing_time.toFixed(2)} seconds.
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                        ✓ Detection complete! {detectionResult.count} vehicle(s) in {detectionResult.processing_time.toFixed(2)}s
                       </Typography>
                     </Alert>
                   )}
@@ -909,7 +683,150 @@ const Upload: React.FC = () => {
               </Card>
             </Grid>
           </Grid>
-        </Container>
+
+          {/* Results Section */}
+          {detectionResult && (
+            <Box sx={{ mt: 8 }}>
+              <Card 
+                elevation={0}
+                sx={{ 
+                  borderRadius: '20px',
+                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
+                  backdropFilter: 'blur(16px)',
+                  border: '1px solid rgba(34, 197, 94, 0.25)',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                }}
+              >
+                <CardContent sx={{ p: 4 }}>
+                  <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 4 }}>
+                    <CheckCircle sx={{ color: '#22c55e', fontSize: 36 }} />
+                    <Box>
+                      <Typography variant="h5" sx={{ fontWeight: 700, color: '#22c55e' }}>
+                        Detection Results
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Analysis complete and ready for review
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  <Grid container spacing={3} sx={{ mb: 4 }}>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <Paper 
+                        elevation={0}
+                        sx={{ 
+                          p: 3,
+                          textAlign: 'center',
+                          background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%)',
+                          border: '1px solid rgba(14, 165, 233, 0.2)',
+                          borderRadius: '12px',
+                        }}
+                      >
+                        <Typography variant="h3" sx={{ fontWeight: 800, color: '#0ea5e9', mb: 1 }}>
+                          {detectionResult.count}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                          Vehicles Detected
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <Paper 
+                        elevation={0}
+                        sx={{ 
+                          p: 3,
+                          textAlign: 'center',
+                          background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%)',
+                          border: '1px solid rgba(168, 85, 247, 0.2)',
+                          borderRadius: '12px',
+                        }}
+                      >
+                        <Typography variant="h3" sx={{ fontWeight: 800, color: '#a855f7', mb: 1 }}>
+                          {detectionResult.processing_time.toFixed(2)}s
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                          Processing Time
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <Paper 
+                        elevation={0}
+                        sx={{ 
+                          p: 3,
+                          textAlign: 'center',
+                          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%)',
+                          border: '1px solid rgba(34, 197, 94, 0.2)',
+                          borderRadius: '12px',
+                        }}
+                      >
+                        <Typography 
+                          variant="h4" 
+                          sx={{ fontWeight: 800, color: '#22c55e', mb: 1, fontSize: '1.5rem' }}
+                        >
+                          {detectionResult.image_size 
+                            ? `${detectionResult.image_size[0]}×${detectionResult.image_size[1]}`
+                            : detectionResult.video_size 
+                            ? `${detectionResult.video_size[0]}×${detectionResult.video_size[1]}`
+                            : 'N/A'}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                          Resolution
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  </Grid>
+
+                  {detectionResult.vehicle_counts && (
+                    <>
+                      <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
+                      <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 700, color: '#0ea5e9' }}>
+                        Vehicle Distribution
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                        {Object.entries(detectionResult.vehicle_counts).map(([type, count]) => (
+                          <Chip
+                            key={type}
+                            label={`${type}: ${count}`}
+                            sx={{
+                              background: `${getVehicleTypeColor(type)}20`,
+                              color: getVehicleTypeColor(type),
+                              fontWeight: 700,
+                              fontSize: '0.95rem',
+                              py: 3,
+                              px: 2,
+                              border: `1px solid ${getVehicleTypeColor(type)}40`,
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    </>
+                  )}
+
+                  <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
+
+                  <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 700, color: '#0ea5e9' }}>
+                    Detected Objects ({detectionResult.detections.length})
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                    {detectionResult.detections.map((detection, idx) => (
+                      <Chip
+                        key={idx}
+                        label={`${detection.class} (${(detection.confidence * 100).toFixed(1)}%)`}
+                        sx={{
+                          background: `${getVehicleTypeColor(detection.class)}30`,
+                          color: getVehicleTypeColor(detection.class),
+                          fontWeight: 600,
+                          border: `1px solid ${getVehicleTypeColor(detection.class)}50`,
+                        }}
+                      />
+                    ))}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
+          )}
+        </Layout>
       </Box>
     </Box>
   );

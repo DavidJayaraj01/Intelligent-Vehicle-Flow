@@ -53,33 +53,62 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
           width: open ? drawerWidth : 72,
           boxSizing: 'border-box',
           transition: 'width 0.3s',
-          backgroundColor: '#1e293b',
+          backgroundColor: '#000000',
+          backdropFilter: 'none',
+          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
           color: 'white',
           overflowX: 'hidden',
         },
       }}
     >
-      {/* Toggle Button */}
+      {/* Header with Toggle */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: open ? 'flex-end' : 'center',
-          p: 2,
+          justifyContent: 'space-between',
+          p: 2.5,
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          background: 'transparent',
         }}
       >
-        <IconButton onClick={onToggle} sx={{ color: 'white' }}>
+        {open && (
+          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.75rem', letterSpacing: '0.8px' }}>
+            NAVIGATION
+          </Typography>
+        )}
+        <IconButton 
+          onClick={onToggle} 
+          size="small"
+          sx={{ 
+            color: '#64748b',
+            transition: 'all 0.3s ease',
+            '&:hover': { 
+              color: '#0ea5e9',
+              background: 'rgba(14, 165, 233, 0.1)',
+            }
+          }}
+        >
           {open ? <ChevronLeft /> : <ChevronRight />}
         </IconButton>
       </Box>
 
-      <Divider sx={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
-
       {/* Navigation Menu */}
-      <List>
+      <List sx={{ px: 1 }}>
         <ListItem disablePadding>
-          <ListItemButton onClick={() => navigate('/dashboard')}>
-            <ListItemIcon sx={{ color: 'white', minWidth: open ? 56 : 'auto' }}>
+          <ListItemButton 
+            onClick={() => navigate('/dashboard')}
+            sx={{
+              borderRadius: '8px',
+              mb: 1,
+              color: 'rgba(255, 255, 255, 0.7)',
+              '&:hover': {
+                color: '#ffffff',
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              }
+            }}
+          >
+            <ListItemIcon sx={{ color: 'inherit', minWidth: open ? 56 : 'auto' }}>
               <DashboardIcon />
             </ListItemIcon>
             {open && <ListItemText primary="Dashboard" />}
@@ -87,8 +116,19 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
         </ListItem>
 
         <ListItem disablePadding>
-          <ListItemButton onClick={() => navigate('/upload')}>
-            <ListItemIcon sx={{ color: 'white', minWidth: open ? 56 : 'auto' }}>
+          <ListItemButton 
+            onClick={() => navigate('/upload')}
+            sx={{
+              borderRadius: '8px',
+              mb: 1,
+              color: 'rgba(255, 255, 255, 0.7)',
+              '&:hover': {
+                color: '#ffffff',
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              }
+            }}
+          >
+            <ListItemIcon sx={{ color: 'inherit', minWidth: open ? 56 : 'auto' }}>
               <CloudUpload />
             </ListItemIcon>
             {open && <ListItemText primary="Upload" />}
@@ -96,8 +136,18 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
         </ListItem>
 
         <ListItem disablePadding>
-          <ListItemButton>
-            <ListItemIcon sx={{ color: 'white', minWidth: open ? 56 : 'auto' }}>
+          <ListItemButton
+            sx={{
+              borderRadius: '8px',
+              mb: 1,
+              color: 'rgba(255, 255, 255, 0.7)',
+              '&:hover': {
+                color: '#ffffff',
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              }
+            }}
+          >
+            <ListItemIcon sx={{ color: 'inherit', minWidth: open ? 56 : 'auto' }}>
               <Timeline />
             </ListItemIcon>
             {open && <ListItemText primary="Analytics" />}
@@ -105,8 +155,18 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
         </ListItem>
 
         <ListItem disablePadding>
-          <ListItemButton>
-            <ListItemIcon sx={{ color: 'white', minWidth: open ? 56 : 'auto' }}>
+          <ListItemButton
+            sx={{
+              borderRadius: '8px',
+              mb: 1,
+              color: 'rgba(255, 255, 255, 0.7)',
+              '&:hover': {
+                color: '#ffffff',
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              }
+            }}
+          >
+            <ListItemIcon sx={{ color: 'inherit', minWidth: open ? 56 : 'auto' }}>
               <Assessment />
             </ListItemIcon>
             {open && <ListItemText primary="Reports" />}
@@ -114,8 +174,18 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
         </ListItem>
 
         <ListItem disablePadding>
-          <ListItemButton>
-            <ListItemIcon sx={{ color: 'white', minWidth: open ? 56 : 'auto' }}>
+          <ListItemButton
+            sx={{
+              borderRadius: '8px',
+              mb: 1,
+              color: 'rgba(255, 255, 255, 0.7)',
+              '&:hover': {
+                color: '#ffffff',
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              }
+            }}
+          >
+            <ListItemIcon sx={{ color: 'inherit', minWidth: open ? 56 : 'auto' }}>
               <Settings />
             </ListItemIcon>
             {open && <ListItemText primary="Settings" />}
@@ -123,33 +193,40 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
         </ListItem>
       </List>
 
-      <Divider sx={{ backgroundColor: 'rgba(255,255,255,0.1)', my: 2 }} />
+      <Divider sx={{ backgroundColor: 'rgba(255,255,255,0.08)', my: 2 }} />
 
       {/* Camera List */}
       {open && (
         <>
-          <Box sx={{ px: 2, mb: 1 }}>
-            <Typography variant="subtitle2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-              CAMERA FEEDS
+          <Box sx={{ px: 2, mb: 2 }}>
+            <Typography variant="overline" sx={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: 700, letterSpacing: '0.5px' }}>
+              Camera Feeds
             </Typography>
           </Box>
 
-          <List>
+          <List sx={{ px: 1 }}>
             {cameras.map((camera) => (
               <ListItem key={camera.id} disablePadding>
                 <ListItemButton
                   selected={selectedCamera === camera.id}
                   onClick={() => onCameraSelect(camera.id)}
                   sx={{
+                    borderRadius: '8px',
+                    mb: 1,
+                    transition: 'all 0.2s ease',
+                    color: selectedCamera === camera.id ? '#ffffff' : 'rgba(255, 255, 255, 0.7)',
+                    backgroundColor: selectedCamera === camera.id ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
+                    border: selectedCamera === camera.id ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                      color: '#ffffff',
+                    },
                     '&.Mui-selected': {
-                      backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                      '&:hover': {
-                        backgroundColor: 'rgba(59, 130, 246, 0.3)',
-                      },
+                      backgroundColor: 'rgba(255, 255, 255, 0.12)',
                     },
                   }}
                 >
-                  <ListItemIcon sx={{ color: 'white', minWidth: 56 }}>
+                  <ListItemIcon sx={{ color: 'inherit', minWidth: 56 }}>
                     <Videocam />
                   </ListItemIcon>
                   <ListItemText
@@ -166,6 +243,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
                               ? 'rgba(34, 197, 94, 0.2)'
                               : 'rgba(251, 191, 36, 0.2)',
                           color: camera.status === 'active' ? '#22c55e' : '#fbbf24',
+                          fontWeight: 600,
                         }}
                       />
                     }
