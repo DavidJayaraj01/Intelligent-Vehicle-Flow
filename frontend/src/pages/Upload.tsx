@@ -16,6 +16,7 @@ import {
   Divider,
   Grid,
 } from '@mui/material';
+import { useThemeContext } from '../contexts/ThemeContext';
 import {
   CloudUpload,
   Image as ImageIcon,
@@ -53,6 +54,7 @@ interface DetectionResult {
 }
 
 const Upload: React.FC = () => {
+  const { mode } = useThemeContext();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedCamera, setSelectedCamera] = useState<string | null>(null);
   const [tabValue, setTabValue] = useState(0);
@@ -201,21 +203,12 @@ const Upload: React.FC = () => {
   const handleResetZoom = () => setZoom(1);
 
   const getVehicleTypeColor = (vehicleType: string): string => {
-    const colors: { [key: string]: string } = {
-      car: '#0ea5e9',
-      truck: '#f59e0b',
-      bus: '#6366f1',
-      motorcycle: '#ec4899',
-      bicycle: '#10b981',
-      bike: '#10b981',
-      person: '#ef4444',
-      van: '#f97316',
-    };
-    return colors[vehicleType.toLowerCase()] || '#94a3b8';
+    // Use simple white/black colors for theme consistency
+    return mode === 'dark' ? '#ffffff' : '#000000';
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#000000' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: mode === 'dark' ? '#000000' : '#ffffff' }}>
       <Sidebar
         open={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
@@ -228,7 +221,7 @@ const Upload: React.FC = () => {
           flexGrow: 1,
           marginLeft: { xs: 0, md: sidebarOpen ? '200px' : '60px' },
           transition: 'margin-left 0.3s',
-          bgcolor: '#000000',
+          bgcolor: mode === 'dark' ? '#000000' : '#ffffff',
           minHeight: '100vh',
         }}
       >
@@ -240,7 +233,7 @@ const Upload: React.FC = () => {
               sx={{ 
                 fontWeight: 900,
                 fontSize: { xs: '2.2rem', sm: '2.8rem', md: '3.8rem' },
-                color: '#ffffff',
+                color: mode === 'dark' ? '#ffffff' : '#000000',
                 mb: 2.5,
                 letterSpacing: '-1px',
               }}
@@ -250,7 +243,7 @@ const Upload: React.FC = () => {
             <Typography 
               variant="h5"
               sx={{ 
-                color: 'rgba(255, 255, 255, 0.6)',
+                color: mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
                 fontWeight: 400,
                 fontSize: { xs: '1.05rem', md: '1.25rem' },
                 maxWidth: '700px',
@@ -267,9 +260,9 @@ const Upload: React.FC = () => {
             sx={{ 
               mb: 6, 
               borderRadius: '16px',
-              background: 'rgba(255, 255, 255, 0.03)',
+              background: mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
               backdropFilter: 'none',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)',
               overflow: 'hidden',
               boxShadow: 'none',
             }}
@@ -285,18 +278,18 @@ const Upload: React.FC = () => {
                   fontWeight: 700,
                   minHeight: 72,
                   textTransform: 'none',
-                  color: 'rgba(255, 255, 255, 0.5)',
+                  color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
-                    color: '#ffffff',
-                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: mode === 'dark' ? '#ffffff' : '#000000',
+                    background: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
                   },
                 },
                 '& .Mui-selected': {
-                  color: '#ffffff !important',
+                  color: mode === 'dark' ? '#ffffff !important' : '#000000 !important',
                 },
                 '& .MuiTabs-indicator': {
-                  background: '#ffffff',
+                  background: mode === 'dark' ? '#ffffff' : '#000000',
                   height: 4,
                   borderRadius: '2px',
                 },
@@ -322,15 +315,14 @@ const Upload: React.FC = () => {
                 elevation={0}
                 sx={{ 
                   borderRadius: '20px',
-                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
+                  background: mode === 'dark' ? '#0a0a0a' : '#fafafa',
                   backdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(14, 165, 233, 0.15)',
+                  border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
                   height: '100%',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                  boxShadow: 'none',
                   transition: 'all 0.3s ease',
                   '&:hover': {
-                    border: '1px solid rgba(14, 165, 233, 0.3)',
-                    boxShadow: '0 12px 48px rgba(14, 165, 233, 0.15)',
+                    border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.2)',
                   },
                 }}
               >
@@ -340,22 +332,22 @@ const Upload: React.FC = () => {
                       sx={{ 
                         p: 2, 
                         borderRadius: '12px', 
-                        background: 'rgba(255, 255, 255, 0.05)',
+                        background: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
                       {tabValue === 0 ? 
-                        <ImageIcon sx={{ color: '#ffffff', fontSize: 32 }} /> : 
-                        <VideoLibrary sx={{ color: '#ffffff', fontSize: 32 }} />
+                        <ImageIcon sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontSize: 32 }} /> : 
+                        <VideoLibrary sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontSize: 32 }} />
                       }
                     </Box>
                     <Box>
-                      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, color: '#ffffff' }}>
+                      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, color: mode === 'dark' ? '#ffffff' : '#000000' }}>
                         {tabValue === 0 ? 'Upload Image' : 'Upload Video'}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                      <Typography variant="caption" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                         {tabValue === 0 ? 'JPG, PNG, GIF' : 'MP4, AVI, MOV'}
                       </Typography>
                     </Box>
@@ -371,16 +363,16 @@ const Upload: React.FC = () => {
 
                   <Box
                     sx={{
-                      border: '3px dashed rgba(255, 255, 255, 0.2)',
+                      border: mode === 'dark' ? '3px dashed rgba(255, 255, 255, 0.2)' : '3px dashed rgba(0, 0, 0, 0.2)',
                       borderRadius: '12px',
                       p: 6,
                       textAlign: 'center',
                       cursor: 'pointer',
-                      background: 'rgba(255, 255, 255, 0.02)',
+                      background: mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       '&:hover': { 
-                        borderColor: 'rgba(255, 255, 255, 0.4)',
-                        background: 'rgba(255, 255, 255, 0.05)',
+                        borderColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)',
+                        background: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
                         transform: 'translateY(-2px)',
                       },
                     }}
@@ -415,19 +407,19 @@ const Upload: React.FC = () => {
                         sx={{ 
                           p: 3, 
                           mb: 3, 
-                          background: 'rgba(34, 197, 94, 0.1)',
-                          border: '1px solid rgba(34, 197, 94, 0.3)',
+                          background: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+                          border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
                           borderRadius: '12px',
                         }}
                       >
                         <Stack direction="row" alignItems="center" spacing={2}>
-                          <CheckCircle sx={{ color: '#22c55e', fontSize: 32, flexShrink: 0 }} />
+                          <CheckCircle sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontSize: 32, flexShrink: 0 }} />
                           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                             <Typography 
                               variant="subtitle1" 
                               sx={{ 
                                 fontWeight: 700, 
-                                color: '#ffffff',
+                                color: mode === 'dark' ? '#ffffff' : '#000000',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
@@ -435,7 +427,7 @@ const Upload: React.FC = () => {
                             >
                               {selectedFile.name}
                             </Typography>
-                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                            <Typography variant="body2" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                               {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                             </Typography>
                           </Box>
@@ -454,12 +446,11 @@ const Upload: React.FC = () => {
                             py: 1.5,
                             fontSize: '1rem',
                             fontWeight: 700,
-                            background: '#ffffff',
-                            color: '#000000',
+                            background: mode === 'dark' ? '#ffffff' : '#000000',
+                            color: mode === 'dark' ? '#000000' : '#ffffff',
                             boxShadow: 'none',
                             '&:hover': {
-                              background: 'rgba(255, 255, 255, 0.9)',
-                              boxShadow: '0 8px 24px rgba(255, 255, 255, 0.2)',
+                              background: mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
                               transform: 'translateY(-2px)',
                             },
                             textTransform: 'none',
@@ -477,11 +468,11 @@ const Upload: React.FC = () => {
                             py: 1.5,
                             fontSize: '1rem',
                             fontWeight: 700,
-                            borderColor: 'rgba(255, 255, 255, 0.3)',
-                            color: '#ffffff',
+                            borderColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+                            color: mode === 'dark' ? '#ffffff' : '#000000',
                             '&:hover': {
-                              borderColor: 'rgba(255, 255, 255, 0.5)',
-                              background: 'rgba(255, 255, 255, 0.05)',
+                              borderColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
+                              background: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
                             },
                             textTransform: 'none',
                           }}
@@ -497,9 +488,10 @@ const Upload: React.FC = () => {
                       severity="error" 
                       sx={{ 
                         mt: 3,
-                        background: 'rgba(239, 68, 68, 0.1)',
-                        border: '1px solid rgba(239, 68, 68, 0.3)',
-                        '& .MuiAlert-icon': { color: '#fca5a5' },
+                        background: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+                        border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
+                        color: mode === 'dark' ? '#ffffff' : '#000000',
+                        '& .MuiAlert-icon': { color: mode === 'dark' ? '#ffffff' : '#000000' },
                       }}
                       icon={<ErrorIcon />}
                       onClose={() => setError(null)}
@@ -517,15 +509,14 @@ const Upload: React.FC = () => {
                 elevation={0}
                 sx={{ 
                   borderRadius: '20px',
-                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
+                  background: mode === 'dark' ? '#0a0a0a' : '#fafafa',
                   backdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(14, 165, 233, 0.15)',
+                  border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
                   height: '100%',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                  boxShadow: 'none',
                   transition: 'all 0.3s ease',
                   '&:hover': {
-                    border: '1px solid rgba(14, 165, 233, 0.3)',
-                    boxShadow: '0 12px 48px rgba(14, 165, 233, 0.15)',
+                    border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.2)',
                   },
                 }}
               >
@@ -536,19 +527,19 @@ const Upload: React.FC = () => {
                         sx={{ 
                           p: 2, 
                           borderRadius: '12px', 
-                          background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(99, 102, 241, 0.2) 100%)',
+                          background: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
                       >
-                        <ImageIcon sx={{ color: '#0ea5e9', fontSize: 32 }} />
+                        <ImageIcon sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontSize: 32 }} />
                       </Box>
                       <Box>
-                        <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                        <Typography variant="h5" sx={{ fontWeight: 700, color: mode === 'dark' ? '#ffffff' : '#000000' }}>
                           Preview
                         </Typography>
-                        <Typography variant="caption" sx={{ color: '#64748b' }}>
+                        <Typography variant="caption" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                           {preview ? 'File loaded' : 'Waiting for file'}
                         </Typography>
                       </Box>
@@ -559,9 +550,9 @@ const Upload: React.FC = () => {
                           onClick={handleZoomOut} 
                           size="small"
                           sx={{ 
-                            background: 'rgba(14, 165, 233, 0.1)',
-                            color: '#0ea5e9',
-                            '&:hover': { background: 'rgba(14, 165, 233, 0.2)' },
+                            background: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                            color: mode === 'dark' ? '#ffffff' : '#000000',
+                            '&:hover': { background: mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)' },
                           }}
                         >
                           <ZoomOut />
@@ -570,9 +561,9 @@ const Upload: React.FC = () => {
                           onClick={handleResetZoom} 
                           size="small"
                           sx={{ 
-                            background: 'rgba(14, 165, 233, 0.1)',
-                            color: '#0ea5e9',
-                            '&:hover': { background: 'rgba(14, 165, 233, 0.2)' },
+                            background: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                            color: mode === 'dark' ? '#ffffff' : '#000000',
+                            '&:hover': { background: mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)' },
                           }}
                         >
                           <Refresh />
@@ -581,9 +572,9 @@ const Upload: React.FC = () => {
                           onClick={handleZoomIn} 
                           size="small"
                           sx={{ 
-                            background: 'rgba(14, 165, 233, 0.1)',
-                            color: '#0ea5e9',
-                            '&:hover': { background: 'rgba(14, 165, 233, 0.2)' },
+                            background: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                            color: mode === 'dark' ? '#ffffff' : '#000000',
+                            '&:hover': { background: mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)' },
                           }}
                         >
                           <ZoomIn />
@@ -595,20 +586,20 @@ const Upload: React.FC = () => {
                   <Box
                     sx={{
                       minHeight: 450,
-                      background: 'rgba(0, 0, 0, 0.3)',
+                      background: mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
                       borderRadius: '12px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       overflow: 'auto',
-                      border: '1px solid rgba(14, 165, 233, 0.2)',
+                      border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
                       flexGrow: 1,
                     }}
                   >
                     {!preview && (
                       <Stack alignItems="center" spacing={2}>
-                        <ImageIcon sx={{ fontSize: 80, color: 'rgba(148, 163, 184, 0.2)' }} />
-                        <Typography variant="body1" color="text.secondary">
+                        <ImageIcon sx={{ fontSize: 80, color: mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)' }} />
+                        <Typography variant="body1" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                           No file selected yet
                         </Typography>
                       </Stack>
@@ -668,10 +659,11 @@ const Upload: React.FC = () => {
                       severity="success" 
                       sx={{ 
                         mt: 3,
-                        background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%)',
-                        border: '1px solid rgba(34, 197, 94, 0.3)',
+                        background: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+                        border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
+                        color: mode === 'dark' ? '#ffffff' : '#000000',
                         '& .MuiAlert-icon': {
-                          color: '#22c55e',
+                          color: mode === 'dark' ? '#ffffff' : '#000000',
                         },
                       }}
                     >
@@ -692,20 +684,20 @@ const Upload: React.FC = () => {
                 elevation={0}
                 sx={{ 
                   borderRadius: '20px',
-                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
+                  background: mode === 'dark' ? '#0a0a0a' : '#fafafa',
                   backdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(34, 197, 94, 0.25)',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                  border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
+                  boxShadow: 'none',
                 }}
               >
                 <CardContent sx={{ p: 4 }}>
                   <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 4 }}>
-                    <CheckCircle sx={{ color: '#22c55e', fontSize: 36 }} />
+                    <CheckCircle sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontSize: 36 }} />
                     <Box>
-                      <Typography variant="h5" sx={{ fontWeight: 700, color: '#22c55e' }}>
+                      <Typography variant="h5" sx={{ fontWeight: 700, color: mode === 'dark' ? '#ffffff' : '#000000' }}>
                         Detection Results
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)' }}>
                         Analysis complete and ready for review
                       </Typography>
                     </Box>
@@ -718,15 +710,15 @@ const Upload: React.FC = () => {
                         sx={{ 
                           p: 3,
                           textAlign: 'center',
-                          background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%)',
-                          border: '1px solid rgba(14, 165, 233, 0.2)',
+                          background: mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
+                          border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)',
                           borderRadius: '12px',
                         }}
                       >
-                        <Typography variant="h3" sx={{ fontWeight: 800, color: '#0ea5e9', mb: 1 }}>
+                        <Typography variant="h3" sx={{ fontWeight: 800, color: mode === 'dark' ? '#ffffff' : '#000000', mb: 1 }}>
                           {detectionResult.count}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                        <Typography variant="body2" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)', fontWeight: 600 }}>
                           Vehicles Detected
                         </Typography>
                       </Paper>
@@ -737,15 +729,15 @@ const Upload: React.FC = () => {
                         sx={{ 
                           p: 3,
                           textAlign: 'center',
-                          background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%)',
-                          border: '1px solid rgba(168, 85, 247, 0.2)',
+                          background: mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
+                          border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)',
                           borderRadius: '12px',
                         }}
                       >
-                        <Typography variant="h3" sx={{ fontWeight: 800, color: '#a855f7', mb: 1 }}>
+                        <Typography variant="h3" sx={{ fontWeight: 800, color: mode === 'dark' ? '#ffffff' : '#000000', mb: 1 }}>
                           {detectionResult.processing_time.toFixed(2)}s
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                        <Typography variant="body2" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)', fontWeight: 600 }}>
                           Processing Time
                         </Typography>
                       </Paper>
@@ -756,14 +748,14 @@ const Upload: React.FC = () => {
                         sx={{ 
                           p: 3,
                           textAlign: 'center',
-                          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%)',
-                          border: '1px solid rgba(34, 197, 94, 0.2)',
+                          background: mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
+                          border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)',
                           borderRadius: '12px',
                         }}
                       >
                         <Typography 
                           variant="h4" 
-                          sx={{ fontWeight: 800, color: '#22c55e', mb: 1, fontSize: '1.5rem' }}
+                          sx={{ fontWeight: 800, color: mode === 'dark' ? '#ffffff' : '#000000', mb: 1, fontSize: '1.5rem' }}
                         >
                           {detectionResult.image_size 
                             ? `${detectionResult.image_size[0]}×${detectionResult.image_size[1]}`
@@ -771,7 +763,7 @@ const Upload: React.FC = () => {
                             ? `${detectionResult.video_size[0]}×${detectionResult.video_size[1]}`
                             : 'N/A'}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                        <Typography variant="body2" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)', fontWeight: 600 }}>
                           Resolution
                         </Typography>
                       </Paper>
@@ -780,8 +772,8 @@ const Upload: React.FC = () => {
 
                   {detectionResult.vehicle_counts && (
                     <>
-                      <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
-                      <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 700, color: '#0ea5e9' }}>
+                      <Divider sx={{ my: 3, borderColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }} />
+                      <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 700, color: mode === 'dark' ? '#ffffff' : '#000000' }}>
                         Vehicle Distribution
                       </Typography>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
@@ -790,13 +782,13 @@ const Upload: React.FC = () => {
                             key={type}
                             label={`${type}: ${count}`}
                             sx={{
-                              background: `${getVehicleTypeColor(type)}20`,
-                              color: getVehicleTypeColor(type),
+                              background: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+                              color: mode === 'dark' ? '#ffffff' : '#000000',
                               fontWeight: 700,
                               fontSize: '0.95rem',
                               py: 3,
                               px: 2,
-                              border: `1px solid ${getVehicleTypeColor(type)}40`,
+                              border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
                             }}
                           />
                         ))}
@@ -804,9 +796,9 @@ const Upload: React.FC = () => {
                     </>
                   )}
 
-                  <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
+                  <Divider sx={{ my: 3, borderColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }} />
 
-                  <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 700, color: '#0ea5e9' }}>
+                  <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 700, color: mode === 'dark' ? '#ffffff' : '#000000' }}>
                     Detected Objects ({detectionResult.detections.length})
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
@@ -815,10 +807,10 @@ const Upload: React.FC = () => {
                         key={idx}
                         label={`${detection.class} (${(detection.confidence * 100).toFixed(1)}%)`}
                         sx={{
-                          background: `${getVehicleTypeColor(detection.class)}30`,
-                          color: getVehicleTypeColor(detection.class),
+                          background: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+                          color: mode === 'dark' ? '#ffffff' : '#000000',
                           fontWeight: 600,
-                          border: `1px solid ${getVehicleTypeColor(detection.class)}50`,
+                          border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
                         }}
                       />
                     ))}

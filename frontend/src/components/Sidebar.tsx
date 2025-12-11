@@ -24,6 +24,7 @@ import {
   QueuePlayNext,
   LocalHospital,
 } from '@mui/icons-material';
+import { useThemeContext } from '../contexts/ThemeContext';
 
 interface SidebarProps {
   open: boolean;
@@ -50,10 +51,11 @@ const navItems = [
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCameraSelect }) => {
-  const drawerWidth = 200;
+  const drawerWidth = 280;
   const collapsedWidth = 64;
   const navigate = useNavigate();
   const location = useLocation();
+  const { mode } = useThemeContext();
 
   return (
     <Drawer
@@ -65,9 +67,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
           width: open ? drawerWidth : collapsedWidth,
           boxSizing: 'border-box',
           transition: 'width 0.2s ease-in-out',
-          backgroundColor: '#0f172a',
-          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-          color: 'white',
+          backgroundColor: 'background.default',
+          borderRight: `1px solid ${mode === 'dark' ? '#1a1a1a' : '#e0e0e0'}`,
+          color: 'text.primary',
           overflowX: 'hidden',
           overflowY: 'auto',
           display: 'flex',
@@ -85,7 +87,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
           px: open ? 2 : 1,
           py: 2,
           minHeight: 64,
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          borderBottom: `1px solid ${mode === 'dark' ? '#1a1a1a' : '#e0e0e0'}`,
         }}
       >
         {open && (
@@ -95,19 +97,23 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
                 width: 36,
                 height: 36,
                 borderRadius: '8px',
-                background: 'linear-gradient(135deg, #0ea5e9 0%, #22c55e 100%)',
+                background: mode === 'dark' 
+                  ? 'linear-gradient(135deg, #ffffff 0%, #cccccc 100%)'
+                  : 'linear-gradient(135deg, #000000 0%, #333333 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '0.9rem' }}>VF</Typography>
+              <Typography sx={{ color: mode === 'dark' ? '#000' : '#fff', fontWeight: 700, fontSize: '0.9rem' }}>
+                VF
+              </Typography>
             </Box>
             <Box>
-              <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.2 }}>
+              <Typography sx={{ color: 'text.primary', fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.2 }}>
                 Vehicle Flow
               </Typography>
-              <Typography sx={{ color: '#22c55e', fontWeight: 600, fontSize: '0.75rem', lineHeight: 1.2 }}>
+              <Typography sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.75rem', lineHeight: 1.2 }}>
                 Analyzer
               </Typography>
             </Box>
@@ -117,10 +123,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
           onClick={onToggle}
           size="small"
           sx={{
-            color: 'rgba(255, 255, 255, 0.5)',
+            color: 'text.secondary',
             '&:hover': {
-              color: '#0ea5e9',
-              bgcolor: 'rgba(14, 165, 233, 0.1)',
+              color: 'text.primary',
+              bgcolor: mode === 'dark' ? '#1a1a1a' : '#f0f0f0',
             },
           }}
         >
@@ -137,7 +143,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
               py: 1,
               fontSize: '0.65rem',
               fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.35)',
+              color: 'text.secondary',
               letterSpacing: '0.5px',
               textTransform: 'uppercase',
             }}
@@ -159,11 +165,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
                     px: 1.5,
                     minHeight: 40,
                     justifyContent: open ? 'flex-start' : 'center',
-                    color: isActive ? '#0ea5e9' : 'rgba(255, 255, 255, 0.6)',
-                    bgcolor: isActive ? 'rgba(14, 165, 233, 0.1)' : 'transparent',
+                    color: isActive ? 'primary.main' : 'text.secondary',
+                    bgcolor: isActive ? (mode === 'dark' ? '#1a1a1a' : '#f0f0f0') : 'transparent',
                     '&:hover': {
-                      color: '#ffffff',
-                      bgcolor: 'rgba(14, 165, 233, 0.08)',
+                      color: 'text.primary',
+                      bgcolor: mode === 'dark' ? '#1a1a1a' : '#f0f0f0',
                     },
                   }}
                 >
@@ -180,7 +186,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
                     <ListItemText
                       primary={item.label}
                       primaryTypographyProps={{
-                        fontSize: '0.85rem',
+                        fontSize: '0.9rem',
                         fontWeight: isActive ? 600 : 400,
                       }}
                     />
@@ -201,7 +207,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
               py: 1,
               fontSize: '0.65rem',
               fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.35)',
+              color: 'text.secondary',
               letterSpacing: '0.5px',
               textTransform: 'uppercase',
             }}
@@ -220,16 +226,16 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
                       borderRadius: '8px',
                       py: 0.75,
                       px: 1.5,
-                      color: isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.6)',
-                      bgcolor: isSelected ? 'rgba(14, 165, 233, 0.12)' : 'transparent',
+                      color: isSelected ? 'text.primary' : 'text.secondary',
+                      bgcolor: isSelected ? (mode === 'dark' ? '#1a1a1a' : '#f0f0f0') : 'transparent',
                       '&:hover': {
-                        bgcolor: 'rgba(14, 165, 233, 0.08)',
-                        color: '#ffffff',
+                        bgcolor: mode === 'dark' ? '#1a1a1a' : '#f0f0f0',
+                        color: 'text.primary',
                       },
                       '&.Mui-selected': {
-                        bgcolor: 'rgba(14, 165, 233, 0.12)',
+                        bgcolor: mode === 'dark' ? '#1a1a1a' : '#f0f0f0',
                         '&:hover': {
-                          bgcolor: 'rgba(14, 165, 233, 0.15)',
+                          bgcolor: mode === 'dark' ? '#222' : '#e8e8e8',
                         },
                       },
                     }}
@@ -240,7 +246,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography
                         sx={{
-                          fontSize: '0.8rem',
+                          fontSize: '0.85rem',
                           fontWeight: isSelected ? 500 : 400,
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
@@ -259,9 +265,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
                           fontWeight: 600,
                           bgcolor:
                             camera.status === 'active'
-                              ? 'rgba(34, 197, 94, 0.15)'
-                              : 'rgba(251, 191, 36, 0.15)',
-                          color: camera.status === 'active' ? '#22c55e' : '#fbbf24',
+                              ? mode === 'dark' ? 'rgba(74, 222, 128, 0.15)' : 'rgba(34, 197, 94, 0.15)'
+                              : mode === 'dark' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(251, 191, 36, 0.15)',
+                          color: camera.status === 'active' 
+                            ? mode === 'dark' ? '#4ade80' : '#22c55e'
+                            : '#fbbf24',
                           '& .MuiChip-label': {
                             px: 0.75,
                           },

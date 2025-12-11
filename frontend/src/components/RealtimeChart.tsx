@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { useThemeContext } from '../contexts/ThemeContext';
 
 interface DataPoint {
   time: string;
@@ -13,18 +14,19 @@ interface RealtimeChartProps {
 }
 
 const RealtimeChart: React.FC<RealtimeChartProps> = ({ data, title = 'Vehicles Per Minute' }) => {
+  const { mode } = useThemeContext();
   return (
     <Card 
       elevation={0}
       sx={{
-        background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
-        backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(14, 165, 233, 0.15)',
-        borderRadius: '16px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+        background: 'background.paper',
+        backdropFilter: 'none',
+        border: `1px solid ${mode === 'dark' ? '#1a1a1a' : '#e0e0e0'}`,
+        borderRadius: '8px',
+        boxShadow: 'none',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         '&:hover': {
-          borderColor: 'rgba(14, 165, 233, 0.3)',
+          borderColor: mode === 'dark' ? '#333333' : '#cccccc',
         }
       }}
     >
@@ -34,7 +36,7 @@ const RealtimeChart: React.FC<RealtimeChartProps> = ({ data, title = 'Vehicles P
           gutterBottom
           sx={{ 
             fontWeight: 700,
-            color: '#f8fafc',
+            color: 'text.primary',
             mb: 3
           }}
         >
@@ -45,39 +47,40 @@ const RealtimeChart: React.FC<RealtimeChartProps> = ({ data, title = 'Vehicles P
             <LineChart data={data} margin={{ top: 5, right: 30, left: 0, bottom: 60 }}>
               <CartesianGrid 
                 strokeDasharray="3 3" 
-                stroke="rgba(255, 255, 255, 0.1)"
+                stroke={mode === 'dark' ? '#1a1a1a' : '#e0e0e0'}
                 vertical={false}
               />
               <XAxis 
                 dataKey="time" 
-                tick={{ fontSize: 12, fill: '#94a3b8' }}
+                tick={{ fontSize: 12, fill: mode === 'dark' ? '#999999' : '#666666' }}
                 angle={-45}
                 textAnchor="end"
                 height={80}
+                stroke={mode === 'dark' ? '#1a1a1a' : '#e0e0e0'}
               />
               <YAxis 
-                tick={{ fontSize: 12, fill: '#94a3b8' }}
-                stroke="rgba(255, 255, 255, 0.1)"
+                tick={{ fontSize: 12, fill: mode === 'dark' ? '#999999' : '#666666' }}
+                stroke={mode === 'dark' ? '#1a1a1a' : '#e0e0e0'}
               />
               <Tooltip 
                 contentStyle={{
-                  backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                  border: '1px solid rgba(14, 165, 233, 0.3)',
+                  backgroundColor: mode === 'dark' ? '#0a0a0a' : '#fafafa',
+                  border: `1px solid ${mode === 'dark' ? '#1a1a1a' : '#e0e0e0'}`,
                   borderRadius: '8px',
-                  color: '#f8fafc'
+                  color: mode === 'dark' ? '#ffffff' : '#000000'
                 }}
-                cursor={{ stroke: 'rgba(14, 165, 233, 0.5)' }}
+                cursor={{ stroke: mode === 'dark' ? '#333333' : '#cccccc' }}
               />
               <Legend 
-                wrapperStyle={{ color: '#94a3b8' }}
+                wrapperStyle={{ color: mode === 'dark' ? '#999999' : '#666666' }}
               />
               <Line 
                 type="monotone" 
                 dataKey="vehicles" 
-                stroke="#0ea5e9" 
-                strokeWidth={3}
-                dot={{ r: 4, fill: '#0ea5e9' }}
-                activeDot={{ r: 6, fill: '#0ea5e9' }}
+                stroke={mode === 'dark' ? '#ffffff' : '#000000'}
+                strokeWidth={2}
+                dot={{ r: 4, fill: mode === 'dark' ? '#ffffff' : '#000000' }}
+                activeDot={{ r: 6, fill: mode === 'dark' ? '#ffffff' : '#000000' }}
                 name="Vehicles/min"
                 isAnimationActive={true}
               />

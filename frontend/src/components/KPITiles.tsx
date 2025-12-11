@@ -1,6 +1,7 @@
 import React from 'react';
 import { Grid, Card, CardContent, Typography, Box } from '@mui/material';
 import { DirectionsCar, Timer, Queue } from '@mui/icons-material';
+import { useThemeContext } from '../contexts/ThemeContext';
 
 interface KPITilesProps {
   totalEvents: number;
@@ -9,29 +10,30 @@ interface KPITilesProps {
 }
 
 const KPITiles: React.FC<KPITilesProps> = ({ totalEvents, avgDwellTime, queueLength }) => {
+  const { mode } = useThemeContext();
   const kpis = [
     {
       title: 'Total Vehicles',
       value: totalEvents.toLocaleString(),
       icon: <DirectionsCar sx={{ fontSize: 40 }} />,
-      color: '#0ea5e9',
-      bgColor: 'rgba(14, 165, 233, 0.1)',
+      color: mode === 'dark' ? '#ffffff' : '#000000',
+      bgColor: mode === 'dark' ? '#1a1a1a' : '#f0f0f0',
       trend: '+2.5%',
     },
     {
       title: 'Avg Dwell Time',
       value: `${avgDwellTime.toFixed(1)}s`,
       icon: <Timer sx={{ fontSize: 40 }} />,
-      color: '#f59e0b',
-      bgColor: 'rgba(245, 158, 11, 0.1)',
+      color: mode === 'dark' ? '#ffffff' : '#000000',
+      bgColor: mode === 'dark' ? '#1a1a1a' : '#f0f0f0',
       trend: '-1.2%',
     },
     {
       title: 'Queue Length',
       value: queueLength.toString(),
       icon: <Queue sx={{ fontSize: 40 }} />,
-      color: '#ef4444',
-      bgColor: 'rgba(239, 68, 68, 0.1)',
+      color: mode === 'dark' ? '#ffffff' : '#000000',
+      bgColor: mode === 'dark' ? '#1a1a1a' : '#f0f0f0',
       trend: '+0.8%',
     },
   ];
@@ -43,10 +45,10 @@ const KPITiles: React.FC<KPITilesProps> = ({ totalEvents, avgDwellTime, queueLen
           <Card 
             sx={{ 
               height: '100%',
-              background: 'rgba(255, 255, 255, 0.03)',
+              background: 'background.paper',
               backdropFilter: 'none',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '16px',
+              border: `1px solid ${mode === 'dark' ? '#1a1a1a' : '#e0e0e0'}`,
+              borderRadius: '8px',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               boxShadow: 'none',
               '&:hover': {

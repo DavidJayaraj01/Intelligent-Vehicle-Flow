@@ -13,8 +13,12 @@ import {
   Alert,
   IconButton,
   Divider,
+  Tabs,
+  Tab,
 } from '@mui/material';
+import { useThemeContext } from '../contexts/ThemeContext';
 import Sidebar from '../components/Sidebar';
+import LineAdjuster from '../components/LineAdjuster';
 import {
   CloudUpload,
   VideoLibrary,
@@ -24,6 +28,7 @@ import {
   Delete,
   Download,
   Timeline,
+  Tune,
 } from '@mui/icons-material';
 
 interface QueueStatistics {
@@ -48,12 +53,16 @@ interface DetectionResult {
 }
 
 const QueueDetection: React.FC = () => {
+  const { mode } = useThemeContext();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<DetectionResult | null>(null);
   const [error, setError] = useState<string>('');
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [activeTab, setActiveTab] = useState(0);
+  const [entryLineY, setEntryLineY] = useState<number>(266);
+  const [exitLineY, setExitLineY] = useState<number>(414);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -107,6 +116,8 @@ const QueueDetection: React.FC = () => {
 
     const formData = new FormData();
     formData.append('file', selectedFile);
+    formData.append('entry_line_y', entryLineY.toString());
+    formData.append('exit_line_y', exitLineY.toString());
 
     try {
       // Simulate upload progress
@@ -205,7 +216,7 @@ const QueueDetection: React.FC = () => {
           marginLeft: '200px',
           transition: 'margin-left 0.3s',
           minHeight: '100vh',
-          bgcolor: '#0a0a0a',
+          bgcolor: mode === 'dark' ? '#000000' : '#ffffff',
           p: 3,
         }}
       >
@@ -216,34 +227,60 @@ const QueueDetection: React.FC = () => {
             variant="h4"
             sx={{
               fontWeight: 600,
-              color: 'white',
+              color: mode === 'dark' ? '#ffffff' : '#000000',
               mb: 1,
               display: 'flex',
               alignItems: 'center',
               gap: 1,
             }}
           >
-            <Timeline sx={{ color: '#0ea5e9' }} />
+            <Timeline sx={{ color: mode === 'dark' ? '#ffffff' : '#000000' }} />
             Queue Detection System
           </Typography>
-          <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+          <Typography variant="body2" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)' }}>
             Upload video or image to detect vehicles and calculate queue waiting times using YOLOv8
           </Typography>
         </Box>
 
+        {/* Tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)', mb: 3 }}>
+          <Tabs
+            value={activeTab}
+            onChange={(_, newValue) => setActiveTab(newValue)}
+            sx={{
+              '& .MuiTab-root': {
+                color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
+                textTransform: 'none',
+                fontWeight: 500,
+                '&.Mui-selected': {
+                  color: mode === 'dark' ? '#ffffff' : '#000000',
+                },
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: mode === 'dark' ? '#ffffff' : '#000000',
+              },
+            }}
+          >
+            <Tab label="Detection & Processing" icon={<Timeline />} iconPosition="start" />
+            <Tab label="Line Configuration" icon={<Tune />} iconPosition="start" />
+          </Tabs>
+        </Box>
+
+        {/* Tab Content */}
+        {activeTab === 0 && (
         <Grid container spacing={3}>
           {/* Upload Section */}
           <Grid item xs={12} md={6}>
             <Paper
               sx={{
                 p: 3,
-                bgcolor: '#1e293b',
-                border: '1px solid rgba(14, 165, 233, 0.3)',
+                bgcolor: mode === 'dark' ? '#0a0a0a' : '#fafafa',
+                border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
               }}
             >
               <Typography
                 variant="h6"
-                sx={{ color: 'white', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
+                sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
               >
                 <CloudUpload />
                 Upload Media
@@ -261,29 +298,29 @@ const QueueDetection: React.FC = () => {
                 <Box
                   onClick={handleUploadClick}
                   sx={{
-                    border: '2px dashed rgba(14, 165, 233, 0.5)',
+                    border: mode === 'dark' ? '2px dashed rgba(255, 255, 255, 0.2)' : '2px dashed rgba(0, 0, 0, 0.2)',
                     borderRadius: 2,
                     p: 4,
                     textAlign: 'center',
                     cursor: 'pointer',
                     transition: 'all 0.3s',
                     '&:hover': {
-                      borderColor: '#0ea5e9',
-                      bgcolor: 'rgba(14, 165, 233, 0.05)',
+                      borderColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)',
+                      bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
                     },
                   }}
                 >
-                  <CloudUpload sx={{ fontSize: 48, color: '#0ea5e9', mb: 2 }} />
-                  <Typography variant="body1" sx={{ color: 'white', mb: 1 }}>
+                  <CloudUpload sx={{ fontSize: 48, color: mode === 'dark' ? '#ffffff' : '#000000', mb: 2 }} />
+                  <Typography variant="body1" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', mb: 1 }}>
                     Click to upload video or image
                   </Typography>
-                  <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+                  <Typography variant="body2" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                     Supports MP4, AVI, MOV, JPG, PNG (max 500MB)
                   </Typography>
                 </Box>
               ) : (
                 <Box>
-                  <Card sx={{ bgcolor: '#0f172a', mb: 2 }}>
+                  <Card sx={{ bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)', mb: 2, border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)' }}>
                     {isVideo ? (
                       <CardMedia
                         component="video"
@@ -303,18 +340,18 @@ const QueueDetection: React.FC = () => {
                     <CardContent>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                         {isVideo ? (
-                          <VideoLibrary sx={{ color: '#0ea5e9' }} />
+                          <VideoLibrary sx={{ color: mode === 'dark' ? '#ffffff' : '#000000' }} />
                         ) : (
-                          <ImageIcon sx={{ color: '#0ea5e9' }} />
+                          <ImageIcon sx={{ color: mode === 'dark' ? '#ffffff' : '#000000' }} />
                         )}
-                        <Typography variant="body2" sx={{ color: 'white', flex: 1 }}>
+                        <Typography variant="body2" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', flex: 1 }}>
                           {selectedFile.name}
                         </Typography>
                         <IconButton size="small" onClick={handleClearFile}>
-                          <Delete sx={{ color: '#ef4444' }} />
+                          <Delete sx={{ color: mode === 'dark' ? '#ffffff' : '#000000' }} />
                         </IconButton>
                       </Box>
-                      <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                      <Typography variant="caption" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                         Size: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
                       </Typography>
                     </CardContent>
@@ -328,13 +365,13 @@ const QueueDetection: React.FC = () => {
                         sx={{
                           height: 8,
                           borderRadius: 1,
-                          bgcolor: 'rgba(14, 165, 233, 0.2)',
+                          bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
                           '& .MuiLinearProgress-bar': {
-                            bgcolor: '#0ea5e9',
+                            bgcolor: mode === 'dark' ? '#ffffff' : '#000000',
                           },
                         }}
                       />
-                      <Typography variant="caption" sx={{ color: '#94a3b8', mt: 0.5 }}>
+                      <Typography variant="caption" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)', mt: 0.5 }}>
                         {uploadProgress < 100 ? `Uploading... ${uploadProgress}%` : 'Processing...'}
                       </Typography>
                     </Box>
@@ -348,8 +385,9 @@ const QueueDetection: React.FC = () => {
                       disabled={isProcessing}
                       startIcon={<PlayArrow />}
                       sx={{
-                        bgcolor: '#0ea5e9',
-                        '&:hover': { bgcolor: '#0284c7' },
+                        bgcolor: mode === 'dark' ? '#ffffff' : '#000000',
+                        color: mode === 'dark' ? '#000000' : '#ffffff',
+                        '&:hover': { bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)' },
                       }}
                     >
                       {isProcessing ? 'Processing...' : 'Process'}
@@ -359,11 +397,11 @@ const QueueDetection: React.FC = () => {
                       onClick={handleUploadClick}
                       startIcon={<CloudUpload />}
                       sx={{
-                        borderColor: '#0ea5e9',
-                        color: '#0ea5e9',
+                        borderColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+                        color: mode === 'dark' ? '#ffffff' : '#000000',
                         '&:hover': {
-                          borderColor: '#0284c7',
-                          bgcolor: 'rgba(14, 165, 233, 0.1)',
+                          borderColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
+                          bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
                         },
                       }}
                     >
@@ -386,14 +424,14 @@ const QueueDetection: React.FC = () => {
             <Paper
               sx={{
                 p: 3,
-                bgcolor: '#1e293b',
-                border: '1px solid rgba(14, 165, 233, 0.3)',
+                bgcolor: mode === 'dark' ? '#0a0a0a' : '#fafafa',
+                border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
                 minHeight: 500,
               }}
             >
               <Typography
                 variant="h6"
-                sx={{ color: 'white', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
+                sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
               >
                 <Timeline />
                 Detection Results
@@ -403,10 +441,10 @@ const QueueDetection: React.FC = () => {
                 <Box>
                   {/* Annotated Output */}
                   <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 1 }}>
+                    <Typography variant="subtitle2" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)', mb: 1 }}>
                       Processed Output with Annotations
                     </Typography>
-                    <Card sx={{ bgcolor: '#0f172a', overflow: 'hidden' }}>
+                    <Card sx={{ bgcolor: mode === 'dark' ? '#000000' : '#ffffff', overflow: 'hidden', border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)' }}>
                       {result.isVideo ? (
                         <Box>
                           <Box 
@@ -419,15 +457,16 @@ const QueueDetection: React.FC = () => {
                               bgcolor: '#000'
                             }}
                           />
-                          <Box sx={{ p: 2, bgcolor: '#1e293b', textAlign: 'center' }}>
+                          <Box sx={{ p: 2, bgcolor: mode === 'dark' ? '#0a0a0a' : '#fafafa', textAlign: 'center' }}>
                             <Button
                               variant="contained"
                               href={result.imageUrl}
                               target="_blank"
                               download="queue_detection_result.mp4"
                               sx={{
-                                bgcolor: '#0ea5e9',
-                                '&:hover': { bgcolor: '#0284c7' },
+                                bgcolor: mode === 'dark' ? '#ffffff' : '#000000',
+                                color: mode === 'dark' ? '#000000' : '#ffffff',
+                                '&:hover': { bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)' },
                               }}
                             >
                               Open Video in New Tab
@@ -453,72 +492,72 @@ const QueueDetection: React.FC = () => {
                   {/* Statistics Cards */}
                   <Grid container spacing={2} sx={{ mb: 3 }}>
                     <Grid item xs={6}>
-                      <Card sx={{ bgcolor: '#0f172a', p: 2 }}>
-                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                      <Card sx={{ bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)', p: 2, border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)' }}>
+                        <Typography variant="caption" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                           Total Vehicles
                         </Typography>
-                        <Typography variant="h4" sx={{ color: '#0ea5e9', fontWeight: 600 }}>
+                        <Typography variant="h4" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontWeight: 600 }}>
                           {result.statistics.totalVehicles}
                         </Typography>
                       </Card>
                     </Grid>
                     <Grid item xs={6}>
-                      <Card sx={{ bgcolor: '#0f172a', p: 2 }}>
-                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                      <Card sx={{ bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)', p: 2, border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)' }}>
+                        <Typography variant="caption" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                           In Queue
                         </Typography>
-                        <Typography variant="h4" sx={{ color: '#f59e0b', fontWeight: 600 }}>
+                        <Typography variant="h4" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontWeight: 600 }}>
                           {result.statistics.currentlyInQueue}
                         </Typography>
                       </Card>
                     </Grid>
                     <Grid item xs={6}>
-                      <Card sx={{ bgcolor: '#0f172a', p: 2 }}>
-                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                      <Card sx={{ bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)', p: 2, border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)' }}>
+                        <Typography variant="caption" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                           Completed
                         </Typography>
-                        <Typography variant="h4" sx={{ color: '#10b981', fontWeight: 600 }}>
+                        <Typography variant="h4" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontWeight: 600 }}>
                           {result.statistics.completedQueue}
                         </Typography>
                       </Card>
                     </Grid>
                     <Grid item xs={6}>
-                      <Card sx={{ bgcolor: '#0f172a', p: 2 }}>
-                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                      <Card sx={{ bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)', p: 2, border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)' }}>
+                        <Typography variant="caption" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                           Avg Wait Time
                         </Typography>
-                        <Typography variant="h4" sx={{ color: '#8b5cf6', fontWeight: 600 }}>
+                        <Typography variant="h4" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontWeight: 600 }}>
                           {result.statistics.avgWaitTime.toFixed(1)}s
                         </Typography>
                       </Card>
                     </Grid>
                   </Grid>
 
-                  <Divider sx={{ borderColor: 'rgba(148, 163, 184, 0.2)', my: 2 }} />
+                  <Divider sx={{ borderColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)', my: 2 }} />
 
                   {/* Additional Stats */}
                   <Box sx={{ mb: 2 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+                      <Typography variant="body2" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                         Max Wait Time:
                       </Typography>
-                      <Typography variant="body2" sx={{ color: 'white', fontWeight: 500 }}>
+                      <Typography variant="body2" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontWeight: 500 }}>
                         {result.statistics.maxWaitTime.toFixed(2)}s
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+                      <Typography variant="body2" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                         Min Wait Time:
                       </Typography>
-                      <Typography variant="body2" sx={{ color: 'white', fontWeight: 500 }}>
+                      <Typography variant="body2" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontWeight: 500 }}>
                         {result.statistics.minWaitTime.toFixed(2)}s
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+                      <Typography variant="body2" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                         Processing Time:
                       </Typography>
-                      <Typography variant="body2" sx={{ color: 'white', fontWeight: 500 }}>
+                      <Typography variant="body2" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontWeight: 500 }}>
                         {result.processingTime.toFixed(2)}s
                       </Typography>
                     </Box>
@@ -530,11 +569,11 @@ const QueueDetection: React.FC = () => {
                     startIcon={<Download />}
                     onClick={handleDownloadResult}
                     sx={{
-                      borderColor: '#0ea5e9',
-                      color: '#0ea5e9',
+                      borderColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+                      color: mode === 'dark' ? '#ffffff' : '#000000',
                       '&:hover': {
-                        borderColor: '#0284c7',
-                        bgcolor: 'rgba(14, 165, 233, 0.1)',
+                        borderColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
+                        bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
                       },
                     }}
                   >
@@ -548,11 +587,11 @@ const QueueDetection: React.FC = () => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     height: 400,
-                    border: '2px dashed rgba(148, 163, 184, 0.3)',
+                    border: mode === 'dark' ? '2px dashed rgba(255, 255, 255, 0.2)' : '2px dashed rgba(0, 0, 0, 0.2)',
                     borderRadius: 2,
                   }}
                 >
-                  <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+                  <Typography variant="body2" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                     Results will appear here after processing
                   </Typography>
                 </Box>
@@ -566,11 +605,11 @@ const QueueDetection: React.FC = () => {
               <Paper
                 sx={{
                   p: 3,
-                  bgcolor: '#1e293b',
-                  border: '1px solid rgba(14, 165, 233, 0.3)',
+                  bgcolor: mode === 'dark' ? '#0a0a0a' : '#fafafa',
+                  border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
                 }}
               >
-                <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
+                <Typography variant="h6" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', mb: 2 }}>
                   Vehicle Details
                 </Typography>
                 <Box sx={{ overflowX: 'auto' }}>
@@ -583,10 +622,11 @@ const QueueDetection: React.FC = () => {
                         alignItems: 'center',
                         p: 2,
                         mb: 1,
-                        bgcolor: '#0f172a',
+                        bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
                         borderRadius: 1,
+                        border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)',
                         '&:hover': {
-                          bgcolor: 'rgba(14, 165, 233, 0.05)',
+                          bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
                         },
                       }}
                     >
@@ -595,12 +635,12 @@ const QueueDetection: React.FC = () => {
                           label={`ID: ${vehicle.id}`}
                           size="small"
                           sx={{
-                            bgcolor: 'rgba(14, 165, 233, 0.2)',
-                            color: '#0ea5e9',
+                            bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                            color: mode === 'dark' ? '#ffffff' : '#000000',
                             fontWeight: 600,
                           }}
                         />
-                        <Typography variant="body2" sx={{ color: 'white' }}>
+                        <Typography variant="body2" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000' }}>
                           {vehicle.type}
                         </Typography>
                       </Box>
@@ -608,8 +648,8 @@ const QueueDetection: React.FC = () => {
                         label={`${vehicle.queueTime.toFixed(2)}s`}
                         size="small"
                         sx={{
-                          bgcolor: 'rgba(139, 92, 246, 0.2)',
-                          color: '#8b5cf6',
+                          bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                          color: mode === 'dark' ? '#ffffff' : '#000000',
                           fontWeight: 600,
                         }}
                       />
@@ -620,6 +660,64 @@ const QueueDetection: React.FC = () => {
             </Grid>
           )}
         </Grid>
+        )}
+
+        {/* Tab 2: Line Configuration */}
+        {activeTab === 1 && (
+          <Box>
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+                Configure Entry and Exit Lines for Queue Detection
+              </Typography>
+              <Typography variant="body2">
+                Use this tool to visually set the boundary lines where vehicles enter and exit the queue zone. 
+                Upload a reference frame from your video feed or use a sample image to adjust line positions.
+                The system will use these coordinates for accurate queue detection and wait time analysis.
+              </Typography>
+            </Alert>
+
+            {previewUrl ? (
+              <LineAdjuster
+                videoUrl={selectedFile?.type.startsWith('video/') ? previewUrl : undefined}
+                imageUrl={selectedFile?.type.startsWith('image/') ? previewUrl : undefined}
+                onLinesUpdate={(entry, exit) => {
+                  setEntryLineY(entry);
+                  setExitLineY(exit);
+                  console.log('Lines updated:', { entry, exit });
+                }}
+                initialEntryY={entryLineY}
+                initialExitY={exitLineY}
+              />
+            ) : (
+              <Card sx={{ bgcolor: mode === 'dark' ? '#0a0a0a' : '#fafafa', border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)', textAlign: 'center', py: 8 }}>
+                <CardContent>
+                  <Tune sx={{ fontSize: 64, color: mode === 'dark' ? '#ffffff' : '#000000', mb: 2 }} />
+                  <Typography variant="h6" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', mb: 1 }}>
+                    Upload Media First
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)', mb: 3 }}>
+                    Please upload a video or image in the Detection & Processing tab to configure the detection lines
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    onClick={() => setActiveTab(0)}
+                    sx={{ bgcolor: mode === 'dark' ? '#ffffff' : '#000000', color: mode === 'dark' ? '#000000' : '#ffffff', '&:hover': { bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)' } }}
+                  >
+                    Go to Upload
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {entryLineY > 0 && exitLineY > 0 && (
+              <Alert severity="success" sx={{ mt: 3 }}>
+                <Typography variant="body2">
+                  ✓ Line configuration saved: Entry at {entryLineY}px, Exit at {exitLineY}px
+                </Typography>
+              </Alert>
+            )}
+          </Box>
+        )}
         </Box>
       </Box>
     </>

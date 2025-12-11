@@ -13,6 +13,7 @@ import {
   Divider,
   Chip,
 } from '@mui/material';
+import { useThemeContext } from '../contexts/ThemeContext';
 import Sidebar from '../components/Sidebar';
 import {
   CloudUpload,
@@ -55,6 +56,7 @@ interface DetectionResult {
 }
 
 const EmergencyDetection: React.FC = () => {
+  const { mode } = useThemeContext();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -173,20 +175,12 @@ const EmergencyDetection: React.FC = () => {
   };
 
   const getEmergencyColor = (type: string) => {
-    switch (type) {
-      case 'ambulance':
-        return '#fbbf24'; // Yellow
-      case 'fire_truck':
-        return '#f97316'; // Orange
-      case 'police_car':
-        return '#3b82f6'; // Blue
-      default:
-        return '#64748b';
-    }
+    // Use theme-aware colors instead of colored emergency colors
+    return mode === 'dark' ? '#ffffff' : '#000000';
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0a0e1a' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: mode === 'dark' ? '#000000' : '#ffffff' }}>
       <Sidebar />
       
       <Box component="main" sx={{ flexGrow: 1, p: 4 }}>
@@ -201,31 +195,28 @@ const EmergencyDetection: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                boxShadow: '0 8px 16px rgba(239, 68, 68, 0.3)',
+                background: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
               }}
             >
-              <LocalHospital sx={{ fontSize: 32, color: '#fff' }} />
+              <LocalHospital sx={{ fontSize: 32, color: mode === 'dark' ? '#ffffff' : '#000000' }} />
             </Box>
             <Box>
               <Typography
                 variant="h3"
                 sx={{
                   fontWeight: 800,
-                  background: 'linear-gradient(135deg, #ef4444 0%, #f97316 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
+                  color: mode === 'dark' ? '#ffffff' : '#000000',
                   letterSpacing: '-0.5px',
                 }}
               >
                 Emergency Vehicle Detection
               </Typography>
-              <Typography variant="body1" sx={{ color: '#94a3b8', mt: 0.5 }}>
+              <Typography variant="body1" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)', mt: 0.5 }}>
                 AI-powered detection of ambulances, fire trucks, and police cars in real-time
               </Typography>
             </Box>
           </Box>
-          <Divider sx={{ borderColor: '#1e293b', mt: 3 }} />
+          <Divider sx={{ borderColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)', mt: 3 }} />
         </Box>
 
         <Grid container spacing={3}>
@@ -233,14 +224,13 @@ const EmergencyDetection: React.FC = () => {
           <Grid item xs={12} md={6}>
             <Card 
               sx={{ 
-                bgcolor: '#1e293b', 
+                bgcolor: mode === 'dark' ? '#0a0a0a' : '#fafafa', 
                 borderRadius: 3, 
                 height: '100%',
-                border: '1px solid #334155',
+                border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
                 transition: 'all 0.3s',
                 '&:hover': {
-                  borderColor: '#475569',
-                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+                  borderColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
                 }
               }}
             >
@@ -254,12 +244,12 @@ const EmergencyDetection: React.FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      bgcolor: 'rgba(239, 68, 68, 0.1)',
+                      bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
                     }}
                   >
-                    <CloudUpload sx={{ color: '#ef4444', fontSize: 24 }} />
+                    <CloudUpload sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontSize: 24 }} />
                   </Box>
-                  <Typography variant="h5" sx={{ color: '#f1f5f9', fontWeight: 700 }}>
+                  <Typography variant="h5" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontWeight: 700 }}>
                     Upload Media
                   </Typography>
                 </Box>
@@ -276,24 +266,24 @@ const EmergencyDetection: React.FC = () => {
                   <Box
                     onClick={handleUploadClick}
                     sx={{
-                      border: '2px dashed #475569',
+                      border: mode === 'dark' ? '2px dashed rgba(255, 255, 255, 0.2)' : '2px dashed rgba(0, 0, 0, 0.2)',
                       borderRadius: 2,
                       p: 4,
                       textAlign: 'center',
                       cursor: 'pointer',
-                      bgcolor: '#0f172a',
+                      bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
                       transition: 'all 0.3s',
                       '&:hover': {
-                        borderColor: '#ef4444',
-                        bgcolor: '#1e293b',
+                        borderColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)',
+                        bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
                       },
                     }}
                   >
-                    <CloudUpload sx={{ fontSize: 48, color: '#64748b', mb: 2 }} />
-                    <Typography variant="body1" sx={{ color: '#cbd5e1', mb: 1 }}>
+                    <CloudUpload sx={{ fontSize: 48, color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)', mb: 2 }} />
+                    <Typography variant="body1" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', mb: 1 }}>
                       Click to upload video or image
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#64748b' }}>
+                    <Typography variant="caption" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                       Supported: MP4, AVI, MOV, JPG, PNG (Max 500MB)
                     </Typography>
                   </Box>
@@ -326,20 +316,20 @@ const EmergencyDetection: React.FC = () => {
 
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                       {selectedFile.type.startsWith('video/') ? (
-                        <VideoLibrary sx={{ color: '#ef4444', mr: 1 }} />
+                        <VideoLibrary sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', mr: 1 }} />
                       ) : (
-                        <ImageIcon sx={{ color: '#ef4444', mr: 1 }} />
+                        <ImageIcon sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', mr: 1 }} />
                       )}
-                      <Typography variant="body2" sx={{ color: '#cbd5e1', flex: 1 }}>
+                      <Typography variant="body2" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', flex: 1 }}>
                         {selectedFile.name}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: '#64748b', mr: 2 }}>
+                      <Typography variant="caption" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)', mr: 2 }}>
                         {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
                       </Typography>
                       <IconButton
                         size="small"
                         onClick={handleClearFile}
-                        sx={{ color: '#ef4444' }}
+                        sx={{ color: mode === 'dark' ? '#ffffff' : '#000000' }}
                       >
                         <Delete />
                       </IconButton>
@@ -352,8 +342,9 @@ const EmergencyDetection: React.FC = () => {
                       disabled={isProcessing}
                       startIcon={<LocalHospital />}
                       sx={{
-                        bgcolor: '#ef4444',
-                        '&:hover': { bgcolor: '#dc2626' },
+                        bgcolor: mode === 'dark' ? '#ffffff' : '#000000',
+                        color: mode === 'dark' ? '#000000' : '#ffffff',
+                        '&:hover': { bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)' },
                         py: 1.5,
                         fontWeight: 600,
                       }}
@@ -365,8 +356,8 @@ const EmergencyDetection: React.FC = () => {
                       <LinearProgress
                         sx={{
                           mt: 2,
-                          bgcolor: '#1e293b',
-                          '& .MuiLinearProgress-bar': { bgcolor: '#ef4444' },
+                          bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                          '& .MuiLinearProgress-bar': { bgcolor: mode === 'dark' ? '#ffffff' : '#000000' },
                         }}
                       />
                     )}
@@ -384,11 +375,11 @@ const EmergencyDetection: React.FC = () => {
 
           {/* Results Section */}
           <Grid item xs={12} md={6}>
-            <Card sx={{ bgcolor: '#1e293b', borderRadius: 2, height: '100%' }}>
+            <Card sx={{ bgcolor: mode === 'dark' ? '#0a0a0a' : '#fafafa', borderRadius: 2, height: '100%', border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)' }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Warning sx={{ color: '#f59e0b', mr: 1 }} />
-                  <Typography variant="h6" sx={{ color: '#f1f5f9', fontWeight: 600 }}>
+                  <Warning sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', mr: 1 }} />
+                  <Typography variant="h6" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontWeight: 600 }}>
                     Detection Results
                   </Typography>
                 </Box>
@@ -398,7 +389,7 @@ const EmergencyDetection: React.FC = () => {
                     sx={{
                       textAlign: 'center',
                       py: 8,
-                      color: '#64748b',
+                      color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
                     }}
                   >
                     <LocalHospital sx={{ fontSize: 64, mb: 2, opacity: 0.3 }} />
@@ -410,10 +401,10 @@ const EmergencyDetection: React.FC = () => {
                   <Box>
                     {/* Processed Output */}
                     <Box sx={{ mb: 3 }}>
-                      <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 1 }}>
+                      <Typography variant="subtitle2" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)', mb: 1 }}>
                         Processed Output with Annotations
                       </Typography>
-                      <Card sx={{ bgcolor: '#0f172a', overflow: 'hidden' }}>
+                      <Card sx={{ bgcolor: mode === 'dark' ? '#000000' : '#ffffff', overflow: 'hidden', border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)' }}>
                         {result.isVideo ? (
                           <Box>
                             <Box 
@@ -426,15 +417,16 @@ const EmergencyDetection: React.FC = () => {
                                 bgcolor: '#000'
                               }}
                             />
-                            <Box sx={{ p: 2, bgcolor: '#1e293b', textAlign: 'center' }}>
+                            <Box sx={{ p: 2, bgcolor: mode === 'dark' ? '#0a0a0a' : '#fafafa', textAlign: 'center' }}>
                               <Button
                                 variant="contained"
                                 href={result.videoUrl}
                                 target="_blank"
                                 download="emergency_detection_result.mp4"
                                 sx={{
-                                  bgcolor: '#ef4444',
-                                  '&:hover': { bgcolor: '#dc2626' },
+                                  bgcolor: mode === 'dark' ? '#ffffff' : '#000000',
+                                  color: mode === 'dark' ? '#000000' : '#ffffff',
+                                  '&:hover': { bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)' },
                                 }}
                               >
                                 Open Video in New Tab
@@ -453,27 +445,27 @@ const EmergencyDetection: React.FC = () => {
 
                     {/* Statistics */}
                     <Box sx={{ mb: 3 }}>
-                      <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 2 }}>
+                      <Typography variant="subtitle2" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)', mb: 2 }}>
                         Detection Summary
                       </Typography>
                       
                       <Grid container spacing={2}>
                         <Grid item xs={6}>
-                          <Card sx={{ bgcolor: '#0f172a', p: 2, textAlign: 'center' }}>
-                            <Typography variant="h3" sx={{ color: '#ef4444', fontWeight: 700 }}>
+                          <Card sx={{ bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)', p: 2, textAlign: 'center', border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)' }}>
+                            <Typography variant="h3" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontWeight: 700 }}>
                               {result.statistics.totalDetections}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                            <Typography variant="caption" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                               Total Detections
                             </Typography>
                           </Card>
                         </Grid>
                         <Grid item xs={6}>
-                          <Card sx={{ bgcolor: '#0f172a', p: 2, textAlign: 'center' }}>
-                            <Typography variant="h3" sx={{ color: '#10b981', fontWeight: 700 }}>
+                          <Card sx={{ bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)', p: 2, textAlign: 'center', border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)' }}>
+                            <Typography variant="h3" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontWeight: 700 }}>
                               {result.processingTime}s
                             </Typography>
-                            <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                            <Typography variant="caption" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                               Processing Time
                             </Typography>
                           </Card>
@@ -483,7 +475,7 @@ const EmergencyDetection: React.FC = () => {
 
                     {/* Detection Counts */}
                     <Box>
-                      <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 2 }}>
+                      <Typography variant="subtitle2" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)', mb: 2 }}>
                         Emergency Vehicle Counts
                       </Typography>
                       
@@ -494,26 +486,26 @@ const EmergencyDetection: React.FC = () => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            bgcolor: '#0f172a',
+                            bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
                             p: 2,
                             borderRadius: 1,
                             mb: 1,
-                            borderLeft: `4px solid ${getEmergencyColor(type)}`,
+                            border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)',
                           }}
                         >
                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             <Typography sx={{ fontSize: 24, mr: 2 }}>
                               {getEmergencyIcon(type)}
                             </Typography>
-                            <Typography variant="body1" sx={{ color: '#cbd5e1', fontWeight: 500 }}>
+                            <Typography variant="body1" sx={{ color: mode === 'dark' ? '#ffffff' : '#000000', fontWeight: 500 }}>
                               {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                             </Typography>
                           </Box>
                           <Chip
                             label={count}
                             sx={{
-                              bgcolor: getEmergencyColor(type),
-                              color: '#fff',
+                              bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                              color: mode === 'dark' ? '#ffffff' : '#000000',
                               fontWeight: 700,
                             }}
                           />
@@ -522,8 +514,8 @@ const EmergencyDetection: React.FC = () => {
                     </Box>
 
                     {result.isVideo && result.statistics.totalFrames && (
-                      <Box sx={{ mt: 2, p: 2, bgcolor: '#0f172a', borderRadius: 1 }}>
-                        <Typography variant="caption" sx={{ color: '#64748b' }}>
+                      <Box sx={{ mt: 2, p: 2, bgcolor: mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)', borderRadius: 1, border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)' }}>
+                        <Typography variant="caption" sx={{ color: mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
                           Frames with detections: {result.statistics.framesWithDetections} / {result.statistics.totalFrames}
                         </Typography>
                       </Box>

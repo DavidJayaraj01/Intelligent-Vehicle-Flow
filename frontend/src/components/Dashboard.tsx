@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Grid, Alert } from '@mui/material';
 import { getEvents, getMetrics, getMetricsTimeSeries } from '../services/api';
+import { useThemeContext } from '../contexts/ThemeContext';
 import wsService from '../services/websocket';
 import KPITiles from './KPITiles';
 import RealtimeChart from './RealtimeChart';
@@ -26,6 +27,7 @@ interface Recommendation {
 }
 
 const Dashboard: React.FC = () => {
+  const { mode } = useThemeContext();
   const [metrics, setMetrics] = useState<Metrics>({
     total_events: 0,
     avg_dwell_time: 0,
@@ -152,7 +154,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0a0a0a' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: mode === 'dark' ? '#000000' : '#ffffff' }}>
       {/* Sidebar */}
       <Sidebar
         open={sidebarOpen}
@@ -168,7 +170,7 @@ const Dashboard: React.FC = () => {
           flexGrow: 1,
           marginLeft: sidebarOpen ? '200px' : '64px',
           transition: 'margin-left 0.2s ease-in-out',
-          bgcolor: '#0a0a0a',
+          bgcolor: mode === 'dark' ? '#000000' : '#ffffff',
           minHeight: '100vh',
         }}
       >
@@ -179,12 +181,12 @@ const Dashboard: React.FC = () => {
               severity="error" 
               sx={{ 
                 mb: 4,
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
+                background: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+                border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
                 borderRadius: '12px',
-                color: '#ffffff',
+                color: mode === 'dark' ? '#ffffff' : '#000000',
                 '& .MuiAlert-icon': {
-                  color: '#ef4444'
+                  color: mode === 'dark' ? '#ffffff' : '#000000'
                 }
               }}
               onClose={() => setError(null)}
