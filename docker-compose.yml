@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: vehicleflow-postgres
+    environment:
+      POSTGRES_USER: vehicleflow
+      POSTGRES_PASSWORD: vehicleflow123
+      POSTGRES_DB: vehicleflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vehicleflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vehicleflow-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: vehicleflow-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vehicleflow-network
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vehicleflow-backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://vehicleflow:vehicleflow123@postgres:5432/vehicleflow
+      REDIS_URL: redis://redis:6379/0
+      API_KEY_SECRET: change-this-secret-in-production
+      CORS_ORIGINS: http://localhost:3000,http://frontend:80
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    networks:
+      - vehicleflow-network
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: vehicleflow-frontend
+    ports:
+      - "3000:80"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+      VITE_WS_URL: ws://localhost:8000/ws/metrics
+    depends_on:
+      - backend
+    networks:
+      - vehicleflow-network
+
+networks:
+  vehicleflow-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
