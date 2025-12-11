@@ -18,7 +18,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title = 'Vehicle Flow Analyze
                     background: '#000000',
                     backdropFilter: 'none',
                     borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                    mb: 6,
+                    mb: 0,
                 }}
             >
                 <Toolbar sx={{ justifyContent: 'space-between', py: 2.5, px: { xs: 2, md: 4 } }}>
@@ -69,7 +69,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title = 'Vehicle Flow Analyze
                     </Box>
                 </Toolbar>
             </AppBar>
-            <Box sx={{ px: { xs: 2, sm: 3, md: 5 }, py: 4, flex: 1 }}>
+            <Box sx={{ px: { xs: 2, sm: 3, md: 5 }, py: 6, flex: 1, bgcolor: '#000000' }}>
                 {children}
             </Box>
         </Box>

@@ -152,7 +152,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#000000' }}>
       {/* Sidebar */}
       <Sidebar
         open={sidebarOpen}
@@ -169,6 +169,7 @@ const Dashboard: React.FC = () => {
           marginLeft: sidebarOpen ? '280px' : '72px',
           transition: 'margin-left 0.3s',
           bgcolor: '#000000',
+          minHeight: '100vh',
         }}
       >
         <Layout onRefresh={handleRefresh}>
