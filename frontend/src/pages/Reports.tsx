@@ -1,39 +1,19 @@
 import React, { useState } from 'react';
 import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Button,
-  Grid,
-  Chip,
-  IconButton,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  InputAdornment,
-  Menu,
-  MenuItem,
-  Divider,
-} from '@mui/material';
-import {
   Download,
-  Visibility,
-  FilterList,
+  Eye,
+  Filter,
   Search,
-  DateRange,
-  Description,
-  PictureAsPdf,
-  TableChart,
-  MoreVert,
-  Share,
-  Delete,
-} from '@mui/icons-material';
+  FileText,
+  RefreshCw,
+  Calendar,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select } from '@/components/ui/select';
 import Sidebar from '../components/Sidebar';
+import { cn } from '@/lib/utils';
 
 interface Report {
   id: string;
@@ -55,9 +35,7 @@ const Reports: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedCamera, setSelectedCamera] = useState<string>('cam01');
   const [searchQuery, setSearchQuery] = useState('');
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const mode = 'dark';  // Default theme mode
+  const [filterType, setFilterType] = useState('all');
 
   const reports: Report[] = [
     {
@@ -120,356 +98,177 @@ const Reports: React.FC = () => {
         efficiency: 85,
       },
     },
-    {
-      id: 'RPT-2024-005',
-      title: 'Monthly Business Insights',
-      type: 'business-insights',
-      date: '2024-11-01 - 2024-11-30',
-      timeRange: 'Full Month',
-      status: 'completed',
-      size: '12.8 MB',
-      metrics: {
-        vehicles: 256420,
-        avgQueue: 3.8,
-        incidents: 45,
-        efficiency: 83,
-      },
-    },
   ];
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, report: Report) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedReport(report);
-  };
+  const filteredReports = reports.filter(report => {
+    const matchesSearch = report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         report.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = filterType === 'all' || report.type === filterType;
+    return matchesSearch && matchesType;
+  });
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedReport(null);
-  };
-
-  const handleDownload = (report: Report, format: 'pdf' | 'excel' | 'json') => {
-    // Simulate download
-    console.log(`Downloading ${report.id} as ${format}`);
-    handleMenuClose();
-    
-    // In real implementation, this would call an API endpoint
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${report.id}_${format}.${format === 'excel' ? 'xlsx' : format}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const getReportTypeColor = (type: string) => {
+  const getTypeLabel = (type: string) => {
     switch (type) {
-      case 'business-insights':
-        return 'primary';
-      case 'traffic-analysis':
-        return 'info';
-      case 'emergency-response':
-        return 'error';
-      case 'queue-performance':
-        return 'success';
-      default:
-        return 'default';
+      case 'business-insights': return 'Business';
+      case 'traffic-analysis': return 'Traffic';
+      case 'emergency-response': return 'Emergency';
+      case 'queue-performance': return 'Queue';
+      default: return type;
     }
   };
 
-  const getReportTypeLabel = (type: string) => {
-    return type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-  };
-
-  const filteredReports = reports.filter(report =>
-    report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    report.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+    <div className="flex min-h-screen bg-background">
       <Sidebar
         open={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         selectedCamera={selectedCamera}
         onCameraSelect={setSelectedCamera}
       />
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 4,
-          ml: sidebarOpen ? '280px' : '64px',
-          transition: 'margin 0.2s ease-in-out',
-        }}
-      >
-        {/* Header */}
-        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
-              Reports & Analytics
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Download and view historical business insights reports
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            startIcon={<Description />}
-            onClick={() => handleDownload(reports[0], 'pdf')}
-          >
-            Generate New Report
-          </Button>
-        </Box>
 
-        {/* Stats Cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Total Reports
-                </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                  {reports.length}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  This Month
-                </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                  12
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Total Size
-                </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                  23 MB
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Latest Report
-                </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700, fontSize: '1.2rem' }}>
-                  Today
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+      <div className={cn("flex-1 transition-all duration-300", sidebarOpen ? "md:ml-[280px]" : "md:ml-16")}>
+        <div className="max-w-[1600px] mx-auto p-4 sm:p-6 md:p-8 lg:p-10">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground font-mono">
+                Reports
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Generated Analytics & Documentation
+              </p>
+            </div>
+            <Button variant="outline" size="sm" className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
 
-        {/* Filters */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Grid container spacing={2} alignItems="center">
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  placeholder="Search reports by title or ID..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Search />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                <Button startIcon={<DateRange />} variant="outlined" size="small">
-                  Date Range
-                </Button>
-                <Button startIcon={<FilterList />} variant="outlined" size="small">
-                  Filter Type
-                </Button>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search reports..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+              <option value="all">All Types</option>
+              <option value="business-insights">Business Insights</option>
+              <option value="traffic-analysis">Traffic Analysis</option>
+              <option value="emergency-response">Emergency Response</option>
+              <option value="queue-performance">Queue Performance</option>
+            </Select>
+            <Button variant="outline" size="sm" className="gap-2 whitespace-nowrap">
+              <Filter className="h-4 w-4" />
+              Filters
+            </Button>
+          </div>
 
-        {/* Reports Table */}
-        <Card>
-          <TableContainer>
+          {/* Reports Table */}
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
             <Table>
-              <TableHead>
+              <TableHeader>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>Report ID</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Key Metrics</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Size</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                  <TableHead className="font-mono text-xs">REPORT ID</TableHead>
+                  <TableHead className="font-mono text-xs">TITLE</TableHead>
+                  <TableHead className="font-mono text-xs">TYPE</TableHead>
+                  <TableHead className="font-mono text-xs">DATE</TableHead>
+                  <TableHead className="font-mono text-xs">VEHICLES</TableHead>
+                  <TableHead className="font-mono text-xs">EFFICIENCY</TableHead>
+                  <TableHead className="font-mono text-xs">STATUS</TableHead>
+                  <TableHead className="font-mono text-xs text-right">ACTIONS</TableHead>
                 </TableRow>
-              </TableHead>
+              </TableHeader>
               <TableBody>
                 {filteredReports.map((report) => (
-                  <TableRow
-                    key={report.id}
-                    sx={{
-                      '&:hover': {
-                        bgcolor: mode === 'dark' ? '#1a1a1a' : '#f5f5f5',
-                      },
-                    }}
-                  >
+                  <TableRow key={report.id} className="hover:bg-muted/50">
+                    <TableCell className="font-mono text-sm">{report.id}</TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                        {report.id}
-                      </Typography>
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">{report.title}</span>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {report.title}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {report.timeRange}
-                      </Typography>
+                      <span className="inline-block px-2 py-1 rounded text-xs font-mono bg-primary/10 text-primary border border-primary/30">
+                        {getTypeLabel(report.type)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {report.date}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">{report.metrics.vehicles.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <span className={cn(
+                        "inline-block px-2 py-1 rounded text-xs font-mono",
+                        report.metrics.efficiency >= 90 ? "bg-green-500/10 text-green-400 border border-green-500/30" :
+                        report.metrics.efficiency >= 80 ? "bg-primary/10 text-primary border border-primary/30" :
+                        "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30"
+                      )}>
+                        {report.metrics.efficiency}%
+                      </span>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        label={getReportTypeLabel(report.type)}
-                        size="small"
-                        color={getReportTypeColor(report.type) as any}
-                      />
+                      <span className={cn(
+                        "inline-block px-2 py-1 rounded text-xs font-mono uppercase",
+                        report.status === 'completed' ? "bg-green-500/10 text-green-400 border border-green-500/30" :
+                        report.status === 'processing' ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30" :
+                        "bg-destructive/10 text-destructive border border-destructive/30"
+                      )}>
+                        {report.status}
+                      </span>
                     </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{report.date}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        <Typography variant="caption">
-                          Vehicles: {report.metrics.vehicles.toLocaleString()}
-                        </Typography>
-                        <Typography variant="caption">
-                          Efficiency: {report.metrics.efficiency}%
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{report.size}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={report.status}
-                        size="small"
-                        color={report.status === 'completed' ? 'success' : 'default'}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDownload(report, 'pdf')}
-                          title="Download PDF"
-                        >
-                          <Download fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={(e) => handleMenuOpen(e, report)}
-                          title="More options"
-                        >
-                          <MoreVert fontSize="small" />
-                        </IconButton>
-                      </Box>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </TableContainer>
-        </Card>
+          </div>
 
-        {/* Context Menu */}
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleMenuClose}
-        >
-          <MenuItem onClick={() => selectedReport && handleDownload(selectedReport, 'pdf')}>
-            <PictureAsPdf fontSize="small" sx={{ mr: 1 }} />
-            Download as PDF
-          </MenuItem>
-          <MenuItem onClick={() => selectedReport && handleDownload(selectedReport, 'excel')}>
-            <TableChart fontSize="small" sx={{ mr: 1 }} />
-            Download as Excel
-          </MenuItem>
-          <MenuItem onClick={() => selectedReport && handleDownload(selectedReport, 'json')}>
-            <Description fontSize="small" sx={{ mr: 1 }} />
-            Download as JSON
-          </MenuItem>
-          <Divider />
-          <MenuItem>
-            <Visibility fontSize="small" sx={{ mr: 1 }} />
-            View Details
-          </MenuItem>
-          <MenuItem>
-            <Share fontSize="small" sx={{ mr: 1 }} />
-            Share Report
-          </MenuItem>
-          <Divider />
-          <MenuItem sx={{ color: 'error.main' }}>
-            <Delete fontSize="small" sx={{ mr: 1 }} />
-            Delete Report
-          </MenuItem>
-        </Menu>
-
-        {/* Report Template Info */}
-        <Card sx={{ mt: 4, bgcolor: mode === 'dark' ? '#0f0f0f' : '#f5f5f5' }}>
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-              Business Insights Report Contents
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                  Traffic Analytics
-                </Typography>
-                <Typography variant="body2" color="text.secondary" component="ul" sx={{ pl: 2 }}>
-                  <li>Peak hour identification and patterns</li>
-                  <li>Vehicle count trends and forecasts</li>
-                  <li>Lane-by-lane performance metrics</li>
-                  <li>Congestion hotspot analysis</li>
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                  Business Intelligence
-                </Typography>
-                <Typography variant="body2" color="text.secondary" component="ul" sx={{ pl: 2 }}>
-                  <li>Queue wait time analysis</li>
-                  <li>Emergency response efficiency</li>
-                  <li>Economic impact calculations</li>
-                  <li>Infrastructure recommendations</li>
-                </Typography>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-      </Box>
-    </Box>
+          {/* Summary Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="text-xs font-mono text-muted-foreground mb-1">TOTAL REPORTS</div>
+              <div className="text-2xl font-bold font-mono">{reports.length}</div>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="text-xs font-mono text-muted-foreground mb-1">COMPLETED</div>
+              <div className="text-2xl font-bold font-mono text-green-400">
+                {reports.filter(r => r.status === 'completed').length}
+              </div>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="text-xs font-mono text-muted-foreground mb-1">TOTAL VEHICLES</div>
+              <div className="text-2xl font-bold font-mono">
+                {reports.reduce((sum, r) => sum + r.metrics.vehicles, 0).toLocaleString()}
+              </div>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="text-xs font-mono text-muted-foreground mb-1">AVG EFFICIENCY</div>
+              <div className="text-2xl font-bold font-mono text-primary">
+                {Math.round(reports.reduce((sum, r) => sum + r.metrics.efficiency, 0) / reports.length)}%
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

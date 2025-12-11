@@ -1,35 +1,22 @@
 import React, { useState } from 'react';
 import {
-  Box,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  Chip,
-  IconButton,
-  Tooltip,
-  Divider,
-  LinearProgress,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-} from '@mui/material';
-import {
   TrendingUp,
-  Schedule,
-  LocalParking,
-  Timeline,
-  Warning,
-  LocalHospital,
-  Speed,
-  AttachMoney,
-  LocationOn,
-  Refresh,
+  Clock,
+  Users,
+  Activity,
+  RefreshCw,
+  BarChart3,
   Info,
-} from '@mui/icons-material';
+  AlertTriangle,
+  Ambulance,
+  Gauge,
+  DollarSign,
+  MapPin,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import Sidebar from '../components/Sidebar';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
+import { cn } from '@/lib/utils';
 
 interface BusinessInsight {
   title: string;
@@ -44,20 +31,14 @@ interface BusinessInsight {
 const Analytics: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedCamera, setSelectedCamera] = useState<string>('cam01');
-  const [loading, setLoading] = useState(false);
-  const mode = 'dark';  // Default theme mode
-  // Using line charts by default
 
-  // Sample data - replace with real API calls
   const peakHourData = [
     { time: '06:00', vehicles: 45 },
     { time: '07:00', vehicles: 120 },
     { time: '08:00', vehicles: 280 },
     { time: '09:00', vehicles: 190 },
     { time: '10:00', vehicles: 140 },
-    { time: '11:00', vehicles: 110 },
     { time: '12:00', vehicles: 150 },
-    { time: '13:00', vehicles: 130 },
     { time: '17:00', vehicles: 240 },
     { time: '18:00', vehicles: 310 },
     { time: '19:00', vehicles: 200 },
@@ -73,10 +54,10 @@ const Analytics: React.FC = () => {
   const businessInsights: BusinessInsight[] = [
     {
       title: 'Peak Hour Identification',
-      description: 'Morning and evening rush hours identified with precision',
+      description: 'Morning and evening rush hours identified',
       value: '8:00 AM & 6:00 PM',
       trend: 'stable',
-      icon: <Schedule />,
+      icon: <Clock className="h-5 w-5" />,
       importance: 'critical',
       details: [
         'Morning peak: 7:30 AM - 9:00 AM (280 vehicles/hour)',
@@ -87,386 +68,225 @@ const Analytics: React.FC = () => {
     },
     {
       title: 'Queue Analysis',
-      description: 'Average wait time and queue length monitoring',
+      description: 'Average wait time monitoring',
       value: '3.2 minutes',
       trend: 'down',
-      icon: <LocalParking />,
+      icon: <Users className="h-5 w-5" />,
       importance: 'high',
       details: [
         'Average queue length: 12 vehicles',
-        'Maximum queue detected: 28 vehicles at 6:15 PM',
-        'Queue clearance rate: 85% efficiency',
+        'Maximum queue: 28 vehicles at 6:15 PM',
+        'Queue clearance: 85% efficiency',
         'Wait time reduced by 15% from last week',
       ],
     },
     {
-      title: 'Lane Performance Score',
-      description: 'Real-time scoring of each traffic lane efficiency',
-      value: '87/100',
+      title: 'Traffic Flow Efficiency',
+      description: 'Overall system performance',
+      value: '87%',
       trend: 'up',
-      icon: <Timeline />,
+      icon: <Activity className="h-5 w-5" />,
       importance: 'high',
       details: [
-        'Lane 4 performing best: 94/100 (287 vehicles processed)',
-        'Lane 3 needs attention: 72/100 (high wait times)',
-        'Overall throughput: 875 vehicles/hour',
-        'Lane utilization: 78% average',
-      ],
-    },
-    {
-      title: 'Congestion Hotspots',
-      description: 'AI-detected areas prone to traffic buildup',
-      value: '3 locations',
-      trend: 'stable',
-      icon: <LocationOn />,
-      importance: 'critical',
-      details: [
-        'Junction A: High congestion 8-9 AM',
-        'Merge Point B: Bottleneck during rush hours',
-        'Exit Ramp C: Queue spillback detected',
-        'Suggested: Traffic signal timing adjustment',
-      ],
-    },
-    {
-      title: 'Emergency Response Efficiency',
-      description: 'Average time for emergency vehicle clearance',
-      value: '42 seconds',
-      trend: 'up',
-      icon: <LocalHospital />,
-      importance: 'critical',
-      details: [
-        'Emergency vehicle detected: 18 instances today',
-        'Average lane clearance time: 42 seconds',
-        '95% success rate in path clearing',
-        'Fastest response: 28 seconds',
-      ],
-    },
-    {
-      title: 'Incident Risk Prediction',
-      description: 'AI-powered prediction of potential traffic incidents',
-      value: 'Medium Risk',
-      trend: 'stable',
-      icon: <Warning />,
-      importance: 'medium',
-      details: [
-        'Risk score: 6.2/10 (Medium)',
-        'High-risk periods: 5-7 PM',
-        'Weather impact: Low visibility tomorrow AM',
-        'Preventive deployment recommended',
-      ],
-    },
-    {
-      title: 'Traffic Forecast (Next Hour)',
-      description: 'ML-based prediction of upcoming traffic patterns',
-      value: '+25% increase',
-      trend: 'up',
-      icon: <Speed />,
-      importance: 'high',
-      details: [
-        'Expected vehicles next hour: 195 (+25%)',
-        'Confidence level: 92%',
-        'Predicted queue time: 4.5 minutes',
-        'Recommendation: Pre-activate overflow lanes',
-      ],
-    },
-    {
-      title: 'Economic Impact Analysis',
-      description: 'Estimated fuel and time savings from optimized flow',
-      value: '$12,450/day',
-      trend: 'up',
-      icon: <AttachMoney />,
-      importance: 'medium',
-      details: [
-        'Fuel savings: $8,200/day (reduced idling)',
-        'Time savings: 2,840 person-hours/day',
-        'Economic value: $4,250/day productivity gain',
-        'CO2 reduction: 1.2 tons/day',
+        'Average throughput: 1,250 vehicles/hour',
+        'System uptime: 99.8%',
+        'Processing accuracy: 94.2%',
+        'Improved by 8% this month',
       ],
     },
   ];
 
-  const handleRefresh = () => {
-    setLoading(true);
-    // Simulate data refresh
-    setTimeout(() => setLoading(false), 1000);
-  };
-
-  const getImportanceColor = (importance: string) => {
-    switch (importance) {
-      case 'critical':
-        return 'error';
-      case 'high':
-        return 'warning';
-      case 'medium':
-        return 'info';
-      default:
-        return 'default';
-    }
-  };
-
-  const getTrendIcon = (trend?: string) => {
-    if (trend === 'up') return <TrendingUp color="success" fontSize="small" />;
-    if (trend === 'down') return <TrendingUp color="error" fontSize="small" sx={{ transform: 'rotate(180deg)' }} />;
-    return null;
-  };
-
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+    <div className="flex min-h-screen bg-background">
       <Sidebar
         open={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         selectedCamera={selectedCamera}
         onCameraSelect={setSelectedCamera}
       />
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 4,
-          ml: sidebarOpen ? '280px' : '64px',
-          transition: 'margin 0.2s ease-in-out',
-        }}
-      >
-        {/* Header */}
-        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
-              Business Intelligence Analytics
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Real-time insights converted from live traffic camera data
-            </Typography>
-          </Box>
-          <Tooltip title="Refresh Data">
-            <IconButton onClick={handleRefresh} disabled={loading}>
-              <Refresh sx={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
-            </IconButton>
-          </Tooltip>
-        </Box>
 
-        {loading && <LinearProgress sx={{ mb: 2 }} />}
+      <div className={cn("flex-1 transition-all duration-300", sidebarOpen ? "md:ml-[280px]" : "md:ml-16")}>
+        <div className="max-w-[1600px] mx-auto p-4 sm:p-6 md:p-8 lg:p-10">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground font-mono">
+                Analytics
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Business Insights & Traffic Analysis
+              </p>
+            </div>
+            <Button variant="outline" size="sm" className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Refresh Data
+            </Button>
+          </div>
 
-        {/* Quick Stats */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Total Vehicles Today
-                </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                  8,542
-                </Typography>
-                <Chip label="+12% vs yesterday" size="small" color="success" sx={{ mt: 1 }} />
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Avg Queue Time
-                </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                  3.2 min
-                </Typography>
-                <Chip label="-8% improvement" size="small" color="success" sx={{ mt: 1 }} />
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  System Efficiency
-                </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                  87%
-                </Typography>
-                <Chip label="Above target" size="small" color="success" sx={{ mt: 1 }} />
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Daily Savings
-                </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                  $12.4K
-                </Typography>
-                <Chip label="Economic impact" size="small" color="info" sx={{ mt: 1 }} />
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Peak Hour Chart */}
-        <Card sx={{ mb: 4 }}>
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              Peak Hour Traffic Pattern
-            </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={peakHourData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={mode === 'dark' ? '#1a1a1a' : '#e0e0e0'} />
-                <XAxis dataKey="time" stroke={mode === 'dark' ? '#999999' : '#666666'} />
-                <YAxis stroke={mode === 'dark' ? '#999999' : '#666666'} />
-                <RechartsTooltip
-                  contentStyle={{
-                    backgroundColor: mode === 'dark' ? '#0a0a0a' : '#fafafa',
-                    border: `1px solid ${mode === 'dark' ? '#1a1a1a' : '#e0e0e0'}`,
-                    color: mode === 'dark' ? '#ffffff' : '#000000',
-                  }}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="vehicles"
-                  stroke={mode === 'dark' ? '#ffffff' : '#000000'}
-                  fill={mode === 'dark' ? '#ffffff' : '#000000'}
-                  name="Vehicles"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Queue Analysis Chart */}
-        <Card sx={{ mb: 4 }}>
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              Lane Performance & Queue Analysis
-            </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={queueAnalysisData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={mode === 'dark' ? '#1a1a1a' : '#e0e0e0'} />
-                <XAxis dataKey="lane" stroke={mode === 'dark' ? '#999999' : '#666666'} />
-                <YAxis stroke={mode === 'dark' ? '#999999' : '#666666'} />
-                <RechartsTooltip
-                  contentStyle={{
-                    backgroundColor: mode === 'dark' ? '#0a0a0a' : '#fafafa',
-                    border: `1px solid ${mode === 'dark' ? '#1a1a1a' : '#e0e0e0'}`,
-                    color: mode === 'dark' ? '#ffffff' : '#000000',
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="avgWait" fill={mode === 'dark' ? '#ffffff' : '#000000'} name="Avg Wait (sec)" />
-                <Bar dataKey="vehicles" fill={mode === 'dark' ? '#666666' : '#cccccc'} name="Vehicles Processed" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Business Insights Grid */}
-        <Typography variant="h5" sx={{ mb: 3, fontWeight: 700 }}>
-          Comprehensive Business Insights
-        </Typography>
-        <Grid container spacing={3}>
-          {businessInsights.map((insight, index) => (
-            <Grid size={{ xs: 12, md: 6 }} key={index}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-                    <Box
-                      sx={{
-                        mr: 2,
-                        p: 1.5,
-                        borderRadius: 2,
-                        bgcolor: mode === 'dark' ? '#1a1a1a' : '#f0f0f0',
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
-                    >
+          {/* Business Insights Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {businessInsights.map((insight, index) => (
+              <div
+                key={index}
+                className="animate-fade-in rounded-xl border border-border bg-card p-6 hover:border-primary/30 transition-colors"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className={cn(
+                    "p-3 rounded-lg",
+                    insight.importance === 'critical' ? "bg-destructive/10" :
+                    insight.importance === 'high' ? "bg-primary/10" :
+                    "bg-muted"
+                  )}>
+                    <div className={cn(
+                      insight.importance === 'critical' ? "text-destructive" :
+                      insight.importance === 'high' ? "text-primary" :
+                      "text-muted-foreground"
+                    )}>
                       {insight.icon}
-                    </Box>
-                    <Box sx={{ flex: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                          {insight.title}
-                        </Typography>
-                        {getTrendIcon(insight.trend)}
-                      </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        {insight.description}
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                        <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                          {insight.value}
-                        </Typography>
-                        <Chip
-                          label={insight.importance.toUpperCase()}
-                          size="small"
-                          color={getImportanceColor(insight.importance) as any}
-                        />
-                      </Box>
-                    </Box>
-                  </Box>
-                  <Divider sx={{ my: 2 }} />
-                  <List dense>
-                    {insight.details.map((detail, idx) => (
-                      <ListItem key={idx} sx={{ px: 0 }}>
-                        <ListItemIcon sx={{ minWidth: 32 }}>
-                          <Info fontSize="small" color="action" />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={detail}
-                          primaryTypographyProps={{ variant: 'body2' }}
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                    </div>
+                  </div>
+                  {insight.trend && (
+                    <div className={cn(
+                      "flex items-center gap-1 text-xs font-mono",
+                      insight.trend === 'up' ? "text-green-400" :
+                      insight.trend === 'down' ? "text-destructive" :
+                      "text-muted-foreground"
+                    )}>
+                      {insight.trend === 'up' ? <TrendingUp className="h-3 w-3" /> : 
+                       insight.trend === 'down' ? <TrendingDown className="h-3 w-3" /> : null}
+                    </div>
+                  )}
+                </div>
 
-        {/* Value Proposition */}
-        <Card sx={{ mt: 4, bgcolor: mode === 'dark' ? '#0f0f0f' : '#f5f5f5' }}>
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-              Why These Insights Matter
-            </Typography>
-            <Grid container spacing={3}>
-              <Grid size={{ xs: 12, md: 4 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                  For Traffic Authorities
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Real-time data enables dynamic traffic signal optimization, reducing congestion by up to 30% and improving overall traffic flow efficiency.
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 12, md: 4 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                  For City Planners
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Historical patterns and predictions guide infrastructure investments, lane expansions, and smart city initiatives with data-backed decisions.
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 12, md: 4 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                  For Emergency Services
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Instant lane clearance notifications and optimized routing save critical seconds, potentially saving lives during medical emergencies.
-                </Typography>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-      </Box>
-      <style>
-        {`
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-        `}
-      </style>
-    </Box>
+                <h3 className="font-semibold text-foreground mb-1">{insight.title}</h3>
+                <p className="text-sm text-muted-foreground mb-3">{insight.description}</p>
+                <p className="text-2xl font-bold font-mono text-primary mb-4">{insight.value}</p>
+
+                <div className="space-y-2">
+                  {insight.details.map((detail, i) => (
+                    <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                      <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                      <span>{detail}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Peak Hour Traffic */}
+            <div className="rounded-xl border border-border bg-card p-6">
+              <div className="mb-6">
+                <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                  Peak Hour Traffic
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Vehicles per hour throughout the day
+                </p>
+              </div>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={peakHourData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 18%)" vertical={false} />
+                    <XAxis dataKey="time" stroke="hsl(0, 0%, 50%)" style={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} />
+                    <YAxis stroke="hsl(0, 0%, 50%)" style={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(0, 0%, 4%)',
+                        border: '1px solid hsl(0, 0%, 18%)',
+                        borderRadius: '8px',
+                        fontFamily: 'JetBrains Mono',
+                        fontSize: '12px',
+                      }}
+                    />
+                    <Line type="monotone" dataKey="vehicles" stroke="hsl(217, 91%, 60%)" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Queue Analysis */}
+            <div className="rounded-xl border border-border bg-card p-6">
+              <div className="mb-6">
+                <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                  Lane Performance
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Average wait time by lane (seconds)
+                </p>
+              </div>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={queueAnalysisData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 18%)" vertical={false} />
+                    <XAxis dataKey="lane" stroke="hsl(0, 0%, 50%)" style={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} />
+                    <YAxis stroke="hsl(0, 0%, 50%)" style={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(0, 0%, 4%)',
+                        border: '1px solid hsl(0, 0%, 18%)',
+                        borderRadius: '8px',
+                        fontFamily: 'JetBrains Mono',
+                        fontSize: '12px',
+                      }}
+                    />
+                    <Bar dataKey="avgWait" fill="hsl(217, 91%, 60%)" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Statistics Table */}
+          <div className="rounded-xl border border-border bg-card p-6">
+            <div className="mb-6">
+              <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                Lane Statistics
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Detailed performance metrics
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4 text-xs font-mono text-muted-foreground">LANE</th>
+                    <th className="text-left py-3 px-4 text-xs font-mono text-muted-foreground">AVG WAIT</th>
+                    <th className="text-left py-3 px-4 text-xs font-mono text-muted-foreground">MAX WAIT</th>
+                    <th className="text-left py-3 px-4 text-xs font-mono text-muted-foreground">VEHICLES</th>
+                    <th className="text-left py-3 px-4 text-xs font-mono text-muted-foreground">STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {queueAnalysisData.map((lane, i) => (
+                    <tr key={i} className="border-b border-border hover:bg-muted/50 transition-colors">
+                      <td className="py-3 px-4 font-mono text-sm">{lane.lane}</td>
+                      <td className="py-3 px-4 font-mono text-sm">{lane.avgWait}s</td>
+                      <td className="py-3 px-4 font-mono text-sm">{lane.maxWait}s</td>
+                      <td className="py-3 px-4 font-mono text-sm">{lane.vehicles}</td>
+                      <td className="py-3 px-4">
+                        <span className={cn(
+                          "inline-block px-2 py-1 rounded text-xs font-mono",
+                          lane.avgWait < 40 ? "bg-green-500/10 text-green-400 border border-green-500/30" :
+                          lane.avgWait < 60 ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30" :
+                          "bg-destructive/10 text-destructive border border-destructive/30"
+                        )}>
+                          {lane.avgWait < 40 ? 'OPTIMAL' : lane.avgWait < 60 ? 'MODERATE' : 'SLOW'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

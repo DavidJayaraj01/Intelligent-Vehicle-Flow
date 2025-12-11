@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://user:password@localhost:5432/vehicleflow"
     REDIS_URL: str = "redis://localhost:6379/0"
     API_KEY_SECRET: str = "default-secret-key-change-me"
-    CORS_ORIGINS: str = "http://localhost:3000"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://vehicle-flow.onrender.com,*"
     
     model_config = SettingsConfigDict(
         env_file=".env",

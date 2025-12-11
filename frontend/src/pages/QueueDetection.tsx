@@ -1,114 +1,88 @@
 import React, { useState, useRef } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  Button,
-  Grid,
-  Card,
-  CardContent,
-  CardMedia,
-  LinearProgress,
-  Chip,
-  Alert,
-  IconButton,
-  Divider,
-} from '@mui/material';
+import { Upload, Video, Image as ImageIcon, Activity, Loader2, X, Download, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import Sidebar from '../components/Sidebar';
-import {
-  CloudUpload,
-  VideoLibrary,
-  Image as ImageIcon,
-  PlayArrow,
-  Delete,
-  Download,
-  Timeline,
-  Menu as MenuIcon,
-} from '@mui/icons-material';
+import { cn } from '@/lib/utils';
 
 interface QueueStatistics {
   totalVehicles: number;
   currentlyInQueue: number;
   completedQueue: number;
   avgWaitTime: number;
-  maxWaitTime: number;
-  minWaitTime: number;
-  vehicleDetails: Array<{
+  maxWaitTime?: number;
+  minWaitTime?: number;
+  vehicleDetails?: Array<{
     id: number;
     type: string;
     queueTime: number;
   }>;
+  vehiclesInQueue?: number;
 }
 
 interface DetectionResult {
   imageUrl: string;
   statistics: QueueStatistics;
-  processingTime: number;
-  isVideo: boolean;
+  processing_time: number;
+  is_video: boolean;
+  output_path?: string;
 }
 
 const QueueDetection: React.FC = () => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [result, setResult] = useState<DetectionResult | null>(null);
-  const [error, setError] = useState<string>('');
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedCamera, setSelectedCamera] = useState<string>('cam01');
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [results, setResults] = useState<DetectionResult | null>(null);
+  const [error, setError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      const validTypes = ['video/mp4', 'video/avi', 'video/mov', 'image/jpeg', 'image/png', 'image/jpg'];
-      if (!validTypes.includes(file.type)) {
-        setError('Please upload a valid video (MP4, AVI, MOV) or image (JPG, PNG) file');
-        return;
-      }
-
-      // Validate file size (max 500MB)
-      if (file.size > 500 * 1024 * 1024) {
-        setError('File size must be less than 500MB');
-        return;
-      }
-
-      setSelectedFile(file);
-      setError('');
-      setResult(null);
-
-      // Create preview URL
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+  const handleFileChange = (selectedFile: File) => {
+    // Validate file type
+    const validTypes = ['video/mp4', 'video/avi', 'video/mov', 'image/jpeg', 'image/png', 'image/jpg'];
+    if (!validTypes.includes(selectedFile.type)) {
+      setError('Please upload a valid video (MP4, AVI, MOV) or image (JPG, PNG) file');
+      return;
     }
+
+    // Validate file size (max 500MB)
+    if (selectedFile.size > 500 * 1024 * 1024) {
+      setError('File size must be less than 500MB');
+      return;
+    }
+
+    setFile(selectedFile);
+    setResults(null);
+    setError('');
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreview(reader.result as string);
+    };
+    reader.readAsDataURL(selectedFile);
   };
 
-  const handleUploadClick = () => {
+  const handleUpload = async (type: 'video' | 'image') => {
     fileInputRef.current?.click();
+    fileInputRef.current!.accept = type === 'video' ? 'video/*' : 'image/*';
   };
 
-  const handleClearFile = () => {
-    setSelectedFile(null);
-    setPreviewUrl('');
-    setResult(null);
-    setError('');
-    setUploadProgress(0);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      handleFileChange(selectedFile);
     }
   };
 
-  const handleProcessFile = async () => {
-    if (!selectedFile) return;
+  const handleAnalyze = async () => {
+    if (!file) return;
 
-    setIsProcessing(true);
+    setUploading(true);
     setError('');
     setUploadProgress(0);
-
     const formData = new FormData();
-    formData.append('file', selectedFile);
+    formData.append('file', file);
 
     try {
       // Simulate upload progress
@@ -122,7 +96,7 @@ const QueueDetection: React.FC = () => {
         });
       }, 200);
 
-      const response = await fetch('/api/v1/queue/detect', {
+      const response = await fetch('http://localhost:8000/api/v1/queue/detect', {
         method: 'POST',
         body: formData,
       });
@@ -130,33 +104,18 @@ const QueueDetection: React.FC = () => {
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+      
       const data = await response.json();
-      
       console.log('Detection response:', data);
-      
+
       // Handle output URL based on type
-      let outputUrl = previewUrl;
+      let outputUrl = preview || '';
       
       if (data.is_video && data.output_path) {
-        // For videos, fetch as blob and create object URL
-        console.log('Fetching video from:', data.output_path);
-        try {
-          const videoResponse = await fetch(data.output_path);
-          if (!videoResponse.ok) {
-            throw new Error(`Failed to fetch video: ${videoResponse.status}`);
-          }
-          const videoBlob = await videoResponse.blob();
-          console.log('Video blob size:', videoBlob.size, 'type:', videoBlob.type);
-          outputUrl = URL.createObjectURL(videoBlob);
-          console.log('Created blob URL:', outputUrl);
-        } catch (videoError) {
-          console.error('Error fetching video:', videoError);
-          throw new Error('Failed to load processed video');
-        }
+        // For videos, use the full URL
+        outputUrl = `http://localhost:8000${data.output_path}`;
+        console.log('Video URL:', outputUrl);
       } else if (data.output_base64) {
         // For images, decode base64
         const byteCharacters = atob(data.output_base64);
@@ -169,526 +128,311 @@ const QueueDetection: React.FC = () => {
         outputUrl = URL.createObjectURL(blob);
         console.log('Image output URL:', outputUrl);
       }
-      
-      console.log('Setting result with URL:', outputUrl);
-      
-      setResult({
+
+      setResults({
         imageUrl: outputUrl,
         statistics: data.statistics,
-        processingTime: data.processing_time,
-        isVideo: data.is_video || false,
+        processing_time: data.processing_time,
+        is_video: data.is_video || false,
+        output_path: data.output_path,
       });
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process file. Please try again.');
-      console.error('Processing error:', err);
+      console.error('Analysis error:', err);
     } finally {
-      setIsProcessing(false);
+      setUploading(false);
       setTimeout(() => setUploadProgress(0), 1000);
     }
   };
 
+  const handleClear = () => {
+    setFile(null);
+    setPreview(null);
+    setResults(null);
+    setError('');
+    setUploadProgress(0);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleDownloadResult = () => {
-    if (result?.imageUrl) {
+    if (results?.imageUrl) {
       const link = document.createElement('a');
-      link.href = result.imageUrl;
-      link.download = `queue_detection_${Date.now()}.jpg`;
+      link.href = results.imageUrl;
+      link.download = `queue_detection_${Date.now()}.${results.is_video ? 'mp4' : 'jpg'}`;
       link.click();
     }
   };
 
-  const isVideo = selectedFile?.type.startsWith('video/');
+  const isVideo = file?.type.startsWith('video/');
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0a0a0a' }}>
+    <div className="flex min-h-screen bg-background">
       <Sidebar
         open={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         selectedCamera={selectedCamera}
         onCameraSelect={setSelectedCamera}
       />
-      <Box
-        sx={{
-          flexGrow: 1,
-          ml: { xs: 0, md: sidebarOpen ? '280px' : '64px' },
-          transition: 'margin-left 0.3s ease-in-out',
-          minHeight: '100vh',
-          bgcolor: '#0a0a0a',
-          display: 'flex',
-          justifyContent: 'center',
-        }}
-      >
-        <Box sx={{ maxWidth: 1400, width: '100%', p: { xs: 2, sm: 3, md: 4 } }}>
-        {/* Mobile Menu Button */}
-        <IconButton
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          sx={{
-            display: { xs: 'flex', md: 'none' },
-            position: 'fixed',
-            top: 16,
-            left: 16,
-            zIndex: 1200,
-            bgcolor: '#1e293b',
-            color: '#ffffff',
-            '&:hover': {
-              bgcolor: '#334155',
-            },
-          }}
-        >
-          <MenuIcon />
-        </IconButton>
 
-        {/* Header */}
-        <Box sx={{ mb: { xs: 4, sm: 6, md: 8 } }}>
-          <Typography
-            variant="h2"
-            sx={{
-              fontWeight: 900,
-              fontSize: { xs: '2.2rem', sm: '2.8rem', md: '3.8rem' },
-              color: '#ffffff',
-              mb: 2.5,
-              letterSpacing: '-1px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-            }}
-          >
-            <Timeline sx={{ color: '#3b82f6', fontSize: { xs: '2rem', md: '3rem' } }} />
-            Queue Detection
-          </Typography>
-          <Typography 
-            variant="h5"
-            sx={{ 
-              color: 'rgba(255, 255, 255, 0.6)',
-              fontWeight: 400,
-              fontSize: { xs: '1.05rem', md: '1.25rem' },
-              maxWidth: '700px',
-              lineHeight: 1.6,
-            }}
-          >
-            Upload video or image to detect vehicles and calculate queue waiting times using YOLOv8
-          </Typography>
-        </Box>
+      <div className={cn("flex-1 transition-all duration-300", sidebarOpen ? "md:ml-[280px]" : "md:ml-16")}>
+        <div className="max-w-[1600px] mx-auto p-4 sm:p-6 md:p-8 lg:p-10">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground font-mono">
+                <Activity className="inline-block h-8 w-8 text-primary mr-3" />
+                Queue Detection
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Upload video or image to detect vehicles and calculate queue waiting times using YOLOv8
+              </p>
+            </div>
+          </div>
 
-        <Grid container spacing={5}>
-          {/* Upload Section */}
-          <Grid size={{ xs: 12, lg: 6 }}>
-            <Card
-              elevation={0}
-              sx={{
-                borderRadius: '20px',
-                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
-                backdropFilter: 'blur(16px)',
-                border: '1px solid rgba(14, 165, 233, 0.15)',
-                height: '100%',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  border: '1px solid rgba(14, 165, 233, 0.3)',
-                  boxShadow: '0 12px 48px rgba(14, 165, 233, 0.15)',
-                },
-              }}
-            >
-              <CardContent sx={{ p: 4 }}>
-                <Typography
-                  variant="h5"
-                  sx={{ fontWeight: 700, mb: 0.5, color: '#ffffff', display: 'flex', alignItems: 'center', gap: 1.5 }}
-                >
-                  <CloudUpload sx={{ fontSize: 32 }} />
-                  Upload Media
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', display: 'block', mb: 4 }}>
-                  MP4, AVI, MOV, JPG, PNG
-                </Typography>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Upload Section */}
+            <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Upload className="h-6 w-6 text-primary" />
+                <h3 className="text-lg font-semibold">Upload Media</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-6">MP4, AVI, MOV, JPG, PNG (max 500MB)</p>
 
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="video/*,image/*"
-                onChange={handleFileSelect}
-                style={{ display: 'none' }}
+                onChange={handleFileInputChange}
+                className="hidden"
               />
 
-              {!selectedFile ? (
-                <Box
-                  onClick={handleUploadClick}
-                  sx={{
-                    border: '2px dashed rgba(14, 165, 233, 0.5)',
-                    borderRadius: 2,
-                    p: 4,
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s',
-                    '&:hover': {
-                      borderColor: '#0ea5e9',
-                      bgcolor: 'rgba(14, 165, 233, 0.05)',
-                    },
-                  }}
+              {!file ? (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-primary/50 rounded-lg p-8 text-center cursor-pointer transition-all hover:border-primary hover:bg-primary/5"
                 >
-                  <CloudUpload sx={{ fontSize: 48, color: '#0ea5e9', mb: 2 }} />
-                  <Typography variant="body1" sx={{ color: 'white', mb: 1 }}>
-                    Click to upload video or image
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#94a3b8' }}>
-                    Supports MP4, AVI, MOV, JPG, PNG (max 500MB)
-                  </Typography>
-                </Box>
+                  <Upload className="h-12 w-12 text-primary mx-auto mb-3" />
+                  <p className="text-sm mb-1">Click to upload video or image</p>
+                  <p className="text-xs text-muted-foreground">Supports MP4, AVI, MOV, JPG, PNG</p>
+                </div>
               ) : (
-                <Box>
-                  <Card sx={{ bgcolor: '#0f172a', mb: 2 }}>
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-border bg-muted/50 overflow-hidden">
                     {isVideo ? (
-                      <CardMedia
-                        component="video"
-                        ref={videoRef}
-                        src={previewUrl}
-                        controls
-                        sx={{ maxHeight: 300 }}
-                      />
+                      <video src={preview || ''} controls className="w-full max-h-[300px]" />
                     ) : (
-                      <CardMedia
-                        component="img"
-                        image={previewUrl}
-                        alt="Preview"
-                        sx={{ maxHeight: 300, objectFit: 'contain' }}
-                      />
+                      <img src={preview || ''} alt="Preview" className="w-full max-h-[300px] object-contain" />
                     )}
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        {isVideo ? (
-                          <VideoLibrary sx={{ color: '#0ea5e9' }} />
-                        ) : (
-                          <ImageIcon sx={{ color: '#0ea5e9' }} />
-                        )}
-                        <Typography variant="body2" sx={{ color: 'white', flex: 1 }}>
-                          {selectedFile.name}
-                        </Typography>
-                        <IconButton size="small" onClick={handleClearFile}>
-                          <Delete sx={{ color: '#ef4444' }} />
-                        </IconButton>
-                      </Box>
-                      <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                        Size: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                      </Typography>
-                    </CardContent>
-                  </Card>
+                    <div className="p-3 border-t border-border">
+                      <div className="flex items-center gap-2 mb-1">
+                        {isVideo ? <Video className="h-4 w-4 text-primary" /> : <ImageIcon className="h-4 w-4 text-primary" />}
+                        <p className="text-sm font-medium flex-1">{file.name}</p>
+                        <Button variant="ghost" size="sm" onClick={handleClear} disabled={uploading}>
+                          <X className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Size: {(file.size / (1024 * 1024)).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
 
                   {uploadProgress > 0 && (
-                    <Box sx={{ mb: 2 }}>
-                      <LinearProgress
-                        variant="determinate"
-                        value={uploadProgress}
-                        sx={{
-                          height: 8,
-                          borderRadius: 1,
-                          bgcolor: 'rgba(14, 165, 233, 0.2)',
-                          '& .MuiLinearProgress-bar': {
-                            bgcolor: '#0ea5e9',
-                          },
-                        }}
-                      />
-                      <Typography variant="caption" sx={{ color: '#94a3b8', mt: 0.5 }}>
+                    <div className="space-y-1">
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
                         {uploadProgress < 100 ? `Uploading... ${uploadProgress}%` : 'Processing...'}
-                      </Typography>
-                    </Box>
+                      </p>
+                    </div>
                   )}
 
-                  <Box sx={{ display: 'flex', gap: 2 }}>
+                  <div className="flex gap-2">
                     <Button
-                      fullWidth
-                      variant="contained"
-                      onClick={handleProcessFile}
-                      disabled={isProcessing}
-                      startIcon={<PlayArrow />}
-                      sx={{
-                        bgcolor: '#0ea5e9',
-                        '&:hover': { bgcolor: '#0284c7' },
-                      }}
+                      className="flex-1 gap-2"
+                      onClick={handleAnalyze}
+                      disabled={uploading || !!results}
                     >
-                      {isProcessing ? 'Processing...' : 'Process'}
+                      {uploading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Activity className="h-4 w-4" />
+                          Process
+                        </>
+                      )}
                     </Button>
                     <Button
-                      variant="outlined"
-                      onClick={handleUploadClick}
-                      startIcon={<CloudUpload />}
-                      sx={{
-                        borderColor: '#0ea5e9',
-                        color: '#0ea5e9',
-                        '&:hover': {
-                          borderColor: '#0284c7',
-                          bgcolor: 'rgba(14, 165, 233, 0.1)',
-                        },
-                      }}
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
                     >
-                      Change
+                      <Upload className="h-4 w-4" />
                     </Button>
-                  </Box>
-                </Box>
+                  </div>
+                </div>
               )}
 
               {error && (
-                <Alert severity="error" sx={{ mt: 2 }}>
-                  {error}
-                </Alert>
+                <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
               )}
-            </CardContent>
-          </Card>
-        </Grid>
+            </div>
 
-          {/* Results Section */}
-          <Grid size={{ xs: 12, lg: 6 }}>
-            <Card
-              elevation={0}
-              sx={{
-                borderRadius: '20px',
-                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
-                backdropFilter: 'blur(16px)',
-                border: '1px solid rgba(14, 165, 233, 0.15)',
-                height: '100%',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  border: '1px solid rgba(14, 165, 233, 0.3)',
-                  boxShadow: '0 12px 48px rgba(14, 165, 233, 0.15)',
-                },
-              }}
-            >
-              <CardContent sx={{ p: 4 }}>
-                <Typography
-                  variant="h5"
-                  sx={{ fontWeight: 700, mb: 0.5, color: '#ffffff', display: 'flex', alignItems: 'center', gap: 1.5 }}
-                >
-                  <Timeline sx={{ fontSize: 32 }} />
-                  Detection Results
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', display: 'block', mb: 4 }}>
-                  Processed queue analysis
-                </Typography>
+            {/* Results Section */}
+            <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-8">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp className="h-6 w-6 text-primary" />
+                <h3 className="text-lg font-semibold">Detection Results</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-6">Processed queue analysis</p>
 
-              {result ? (
-                <Box>
+              {results ? (
+                <div className="space-y-4">
                   {/* Annotated Output */}
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 1 }}>
-                      Processed Output with Annotations
-                    </Typography>
-                    <Card sx={{ bgcolor: '#0f172a', overflow: 'hidden' }}>
-                      {result.isVideo ? (
-                        <Box>
-                          <Box 
-                            component="iframe"
-                            src={result.imageUrl}
-                            sx={{
-                              width: '100%',
-                              height: 400,
-                              border: 'none',
-                              bgcolor: '#000'
-                            }}
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Processed Output with Annotations</p>
+                    <div className="rounded-lg border border-border bg-muted/50 overflow-hidden">
+                      {results.is_video ? (
+                        <div>
+                          <video 
+                            src={results.imageUrl} 
+                            controls 
+                            className="w-full max-h-[400px]"
+                            onError={(e) => console.error('Video load error:', e)}
                           />
-                          <Box sx={{ p: 2, bgcolor: '#1e293b', textAlign: 'center' }}>
-                            <Button
-                              variant="contained"
-                              href={result.imageUrl}
+                          <div className="p-3 bg-card/50 text-center border-t border-border">
+                            <a
+                              href={results.imageUrl}
                               target="_blank"
-                              download="queue_detection_result.mp4"
-                              sx={{
-                                bgcolor: '#0ea5e9',
-                                '&:hover': { bgcolor: '#0284c7' },
-                              }}
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary hover:underline"
                             >
-                              Open Video in New Tab
-                            </Button>
-                          </Box>
-                        </Box>
+                              Open Video in New Tab →
+                            </a>
+                          </div>
+                        </div>
                       ) : (
                         <img
-                          src={result.imageUrl}
+                          src={results.imageUrl}
                           alt="Processed result"
-                          style={{ width: '100%', maxHeight: 400, objectFit: 'contain' }}
-                          onError={(e) => {
-                            console.error('Image load error:', e);
-                          }}
-                          onLoad={() => {
-                            console.log('Image loaded successfully');
-                          }}
+                          className="w-full max-h-[400px] object-contain"
+                          onError={(e) => console.error('Image load error:', e)}
                         />
                       )}
-                    </Card>
-                  </Box>
+                    </div>
+                  </div>
 
-                  {/* Statistics Cards */}
-                  <Grid container spacing={2} sx={{ mb: 3 }}>
-                    <Grid size={{ xs: 6 }}>
-                      <Card sx={{ bgcolor: '#0f172a', p: 2 }}>
-                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                          Total Vehicles
-                        </Typography>
-                        <Typography variant="h4" sx={{ color: '#0ea5e9', fontWeight: 600 }}>
-                          {result.statistics.totalVehicles}
-                        </Typography>
-                      </Card>
-                    </Grid>
-                    <Grid size={{ xs: 6 }}>
-                      <Card sx={{ bgcolor: '#0f172a', p: 2 }}>
-                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                          In Queue
-                        </Typography>
-                        <Typography variant="h4" sx={{ color: '#f59e0b', fontWeight: 600 }}>
-                          {result.statistics.currentlyInQueue}
-                        </Typography>
-                      </Card>
-                    </Grid>
-                    <Grid size={{ xs: 6 }}>
-                      <Card sx={{ bgcolor: '#0f172a', p: 2 }}>
-                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                          Completed
-                        </Typography>
-                        <Typography variant="h4" sx={{ color: '#10b981', fontWeight: 600 }}>
-                          {result.statistics.completedQueue}
-                        </Typography>
-                      </Card>
-                    </Grid>
-                    <Grid size={{ xs: 6 }}>
-                      <Card sx={{ bgcolor: '#0f172a', p: 2 }}>
-                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                          Avg Wait Time
-                        </Typography>
-                        <Typography variant="h4" sx={{ color: '#8b5cf6', fontWeight: 600 }}>
-                          {result.statistics.avgWaitTime.toFixed(1)}s
-                        </Typography>
-                      </Card>
-                    </Grid>
-                  </Grid>
-
-                  <Divider sx={{ borderColor: 'rgba(148, 163, 184, 0.2)', my: 2 }} />
-
-                  {/* Additional Stats */}
-                  <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2" sx={{ color: '#94a3b8' }}>
-                        Max Wait Time:
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: 'white', fontWeight: 500 }}>
-                        {result.statistics.maxWaitTime.toFixed(2)}s
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2" sx={{ color: '#94a3b8' }}>
-                        Min Wait Time:
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: 'white', fontWeight: 500 }}>
-                        {result.statistics.minWaitTime.toFixed(2)}s
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" sx={{ color: '#94a3b8' }}>
-                        Processing Time:
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: 'white', fontWeight: 500 }}>
-                        {result.processingTime.toFixed(2)}s
-                      </Typography>
-                    </Box>
-                  </Box>
-
+                  {/* Download Button */}
                   <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={<Download />}
+                    variant="outline"
+                    className="w-full gap-2"
                     onClick={handleDownloadResult}
-                    sx={{
-                      borderColor: '#0ea5e9',
-                      color: '#0ea5e9',
-                      '&:hover': {
-                        borderColor: '#0284c7',
-                        bgcolor: 'rgba(14, 165, 233, 0.1)',
-                      },
-                    }}
                   >
+                    <Download className="h-4 w-4" />
                     Download Results
                   </Button>
-                </Box>
+                </div>
               ) : (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: 400,
-                    border: '2px dashed rgba(148, 163, 184, 0.3)',
-                    borderRadius: 2,
-                  }}
-                >
-                  <Typography variant="body2" sx={{ color: '#94a3b8' }}>
-                    Results will appear here after processing
-                  </Typography>
-                </Box>
+                <div className="flex items-center justify-center h-[400px] border-2 border-dashed border-border rounded-lg">
+                  <p className="text-sm text-muted-foreground">Results will appear here after processing</p>
+                </div>
               )}
-            </CardContent>
-          </Card>
-        </Grid>
+            </div>
+          </div>
 
-          {/* Vehicle Details Table */}
-          {result && result.statistics.vehicleDetails.length > 0 && (
-            <Grid size={{ xs: 12 }}>
-              <Paper
-                sx={{
-                  p: 3,
-                  bgcolor: '#1e293b',
-                  border: '1px solid rgba(14, 165, 233, 0.3)',
-                }}
-              >
-                <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
-                  Vehicle Details
-                </Typography>
-                <Box sx={{ overflowX: 'auto' }}>
-                  {result.statistics.vehicleDetails.map((vehicle, index) => (
-                    <Box
-                      key={index}
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        p: 2,
-                        mb: 1,
-                        bgcolor: '#0f172a',
-                        borderRadius: 1,
-                        '&:hover': {
-                          bgcolor: 'rgba(14, 165, 233, 0.05)',
-                        },
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                        <Chip
-                          label={`ID: ${vehicle.id}`}
-                          size="small"
-                          sx={{
-                            bgcolor: 'rgba(14, 165, 233, 0.2)',
-                            color: '#0ea5e9',
-                            fontWeight: 600,
-                          }}
-                        />
-                        <Typography variant="body2" sx={{ color: 'white' }}>
-                          {vehicle.type}
-                        </Typography>
-                      </Box>
-                      <Chip
-                        label={`${vehicle.queueTime.toFixed(2)}s`}
-                        size="small"
-                        sx={{
-                          bgcolor: 'rgba(139, 92, 246, 0.2)',
-                          color: '#8b5cf6',
-                          fontWeight: 600,
-                        }}
-                      />
-                    </Box>
-                  ))}
-                </Box>
-              </Paper>
-            </Grid>
+          {/* Statistics Cards */}
+          {results && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="rounded-lg border border-border bg-card p-6">
+                <div className="text-xs font-mono text-muted-foreground mb-2">TOTAL VEHICLES</div>
+                <div className="text-4xl font-bold text-primary font-mono">
+                  {results.statistics.totalVehicles}
+                </div>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-6">
+                <div className="text-xs font-mono text-muted-foreground mb-2">IN QUEUE</div>
+                <div className="text-4xl font-bold text-orange-400 font-mono">
+                  {results.statistics.currentlyInQueue || results.statistics.vehiclesInQueue || 0}
+                </div>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-6">
+                <div className="text-xs font-mono text-muted-foreground mb-2">COMPLETED</div>
+                <div className="text-4xl font-bold text-green-400 font-mono">
+                  {results.statistics.completedQueue || 0}
+                </div>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-6">
+                <div className="text-xs font-mono text-muted-foreground mb-2">AVG WAIT TIME</div>
+                <div className="text-4xl font-bold text-purple-400 font-mono">
+                  {results.statistics.avgWaitTime.toFixed(1)}s
+                </div>
+              </div>
+            </div>
           )}
-        </Grid>
-        </Box>
-      </Box>
-    </Box>
+
+          {/* Additional Statistics */}
+          {results && (
+            <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
+              <h3 className="text-lg font-semibold mb-4 font-mono">Additional Statistics</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {results.statistics.maxWaitTime !== undefined && (
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                    <span className="text-sm text-muted-foreground">Max Wait Time:</span>
+                    <span className="text-sm font-mono font-semibold">{results.statistics.maxWaitTime.toFixed(2)}s</span>
+                  </div>
+                )}
+                {results.statistics.minWaitTime !== undefined && (
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                    <span className="text-sm text-muted-foreground">Min Wait Time:</span>
+                    <span className="text-sm font-mono font-semibold">{results.statistics.minWaitTime.toFixed(2)}s</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                  <span className="text-sm text-muted-foreground">Processing Time:</span>
+                  <span className="text-sm font-mono font-semibold">{results.processing_time.toFixed(2)}s</span>
+                </div>
+              </div>
+
+              {/* Vehicle Details Table */}
+              {results.statistics.vehicleDetails && results.statistics.vehicleDetails.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-3">Vehicle Details</h4>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {results.statistics.vehicleDetails.map((vehicle, idx) => (
+                      <div
+                        key={idx}
+                        className="flex justify-between items-center p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="px-2 py-1 rounded bg-primary/20 text-primary text-xs font-mono font-semibold">
+                            ID: {vehicle.id}
+                          </span>
+                          <span className="text-sm">{vehicle.type}</span>
+                        </div>
+                        <span className="px-2 py-1 rounded bg-purple-500/20 text-purple-400 text-xs font-mono font-semibold">
+                          {vehicle.queueTime.toFixed(2)}s
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

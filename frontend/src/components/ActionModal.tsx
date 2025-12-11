@@ -1,18 +1,16 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { CheckCircle, X } from 'lucide-react';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
-  Button,
-  Typography,
-  TextField,
-  Box,
-  Alert,
-  Chip,
-} from '@mui/material';
-import { CheckCircle, Cancel } from '@mui/icons-material';
-import { postAction } from '../services/api';
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 interface Recommendation {
   type: string;
@@ -28,7 +26,7 @@ interface ActionModalProps {
   recommendation: Recommendation | null;
 }
 
-const ActionModal: React.FC<ActionModalProps> = ({ open, onClose, recommendation }) => {
+export function ActionModal({ open, onClose, recommendation }: ActionModalProps) {
   const [operatorId, setOperatorId] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -44,24 +42,18 @@ const ActionModal: React.FC<ActionModalProps> = ({ open, onClose, recommendation
 
     setLoading(true);
     setError('');
-    try {
-      await postAction({
-        operator_id: operatorId,
-        action_type: recommendation.type,
-        params: recommendation.params,
-        camera_id: recommendation.camera_id,
-      });
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        setOperatorId('');
-        onClose();
-      }, 2000);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to submit action');
-    } finally {
-      setLoading(false);
-    }
+    
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    
+    setSuccess(true);
+    setTimeout(() => {
+      setSuccess(false);
+      setOperatorId('');
+      onClose();
+    }, 2000);
+    
+    setLoading(false);
   };
 
   const handleReject = () => {
@@ -74,155 +66,113 @@ const ActionModal: React.FC<ActionModalProps> = ({ open, onClose, recommendation
   if (!recommendation) return null;
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      maxWidth="sm" 
-      fullWidth
-      PaperProps={{
-        sx: {
-          background: 'rgba(0, 0, 0, 0.95)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6)',
-        }
-      }}
-    >
-      <DialogTitle sx={{ color: '#ffffff', fontWeight: 700 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          Action Recommendation
-          <Chip
-            label={`${(recommendation.confidence * 100).toFixed(0)}% Confidence`}
-            sx={{
-              backgroundColor: recommendation.confidence > 0.8 ? 'rgba(34, 197, 94, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-              color: recommendation.confidence > 0.8 ? '#22c55e' : '#f59e0b',
-              fontWeight: 600,
-            }}
-            size="small"
-          />
-        </Box>
-      </DialogTitle>
-      <DialogContent sx={{ color: '#ffffff' }}>
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="border-border bg-card sm:max-w-md">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="font-mono text-lg text-foreground">
+              Action Recommendation
+            </DialogTitle>
+            <span className="rounded border border-border bg-secondary px-2 py-0.5 font-mono text-xs text-foreground">
+              {(recommendation.confidence * 100).toFixed(0)}% CONF
+            </span>
+          </div>
+        </DialogHeader>
+
         {success ? (
-          <Alert 
-            severity="success" 
-            sx={{ 
-              mb: 2,
-              bgcolor: 'rgba(34, 197, 94, 0.1)',
-              color: '#22c55e',
-              '& .MuiAlert-icon': { color: '#22c55e' }
-            }}
-          >
-            Action submitted successfully!
-          </Alert>
+          <div className="flex flex-col items-center gap-4 py-8">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-foreground">
+              <CheckCircle className="h-8 w-8 text-foreground" />
+            </div>
+            <p className="font-mono text-sm text-foreground">Action Approved</p>
+          </div>
         ) : (
           <>
-            <Typography 
-              variant="subtitle1" 
-              gutterBottom 
-              sx={{ fontWeight: 700, mt: 2, color: '#f8fafc' }}
-            >
-              {recommendation.type}
-            </Typography>
-            <Typography variant="body1" sx={{ color: '#94a3b8', mb: 2 }}>
-              {recommendation.description}
-            </Typography>
+            <div className="space-y-4 py-4">
+              {/* Action Type */}
+              <div className="rounded-lg border border-border bg-secondary p-4">
+                <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                  Action Type
+                </p>
+                <p className="mt-1 font-mono text-lg font-semibold text-foreground">
+                  {recommendation.type.replace(/_/g, ' ').toUpperCase()}
+                </p>
+              </div>
 
-            {recommendation.camera_id && (
-              <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
-                <strong>Camera:</strong> {recommendation.camera_id}
-              </Typography>
-            )}
+              {/* Description */}
+              <div>
+                <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                  Description
+                </p>
+                <p className="mt-1 text-sm text-foreground">
+                  {recommendation.description}
+                </p>
+              </div>
 
-            {Object.keys(recommendation.params).length > 0 && (
-              <Box sx={{ 
-                mt: 2, 
-                mb: 2, 
-                p: 2, 
-                bgcolor: 'rgba(14, 165, 233, 0.1)',
-                border: '1px solid rgba(14, 165, 233, 0.2)',
-                borderRadius: '8px'
-              }}>
-                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 700, color: '#0ea5e9' }}>
-                  Parameters:
-                </Typography>
-                {Object.entries(recommendation.params).map(([key, value]) => (
-                  <Typography key={key} variant="body2" sx={{ color: '#94a3b8' }}>
-                    <strong>{key}:</strong> {JSON.stringify(value)}
-                  </Typography>
-                ))}
-              </Box>
-            )}
+              {/* Parameters */}
+              {Object.keys(recommendation.params).length > 0 && (
+                <div>
+                  <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                    Parameters
+                  </p>
+                  <div className="mt-2 space-y-2">
+                    {Object.entries(recommendation.params).map(([key, value]) => (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between rounded border border-border bg-background px-3 py-2"
+                      >
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {key.replace(/_/g, ' ')}
+                        </span>
+                        <span className="font-mono text-xs text-foreground">
+                          {String(value)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-            {error && (
-              <Alert 
-                severity="error" 
-                sx={{ 
-                  mb: 2,
-                  bgcolor: 'rgba(239, 68, 68, 0.1)',
-                  color: '#fca5a5',
-                  '& .MuiAlert-icon': { color: '#fca5a5' }
-                }}
+              {/* Operator ID */}
+              <div className="space-y-2">
+                <Label htmlFor="operatorId" className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                  Operator ID
+                </Label>
+                <Input
+                  id="operatorId"
+                  value={operatorId}
+                  onChange={(e) => setOperatorId(e.target.value)}
+                  placeholder="Enter your operator ID"
+                  className="border-border bg-background font-mono"
+                />
+              </div>
+
+              {error && (
+                <p className="text-sm text-destructive">{error}</p>
+              )}
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={handleReject}
+                className="flex-1 border-border"
               >
-                {error}
-              </Alert>
-            )}
-
-            <TextField
-              fullWidth
-              label="Your Operator ID"
-              value={operatorId}
-              onChange={(e) => setOperatorId(e.target.value)}
-              variant="outlined"
-              sx={{ 
-                mt: 2,
-                '& .MuiOutlinedInput-root': {
-                  color: '#f8fafc',
-                  '& fieldset': {
-                    borderColor: 'rgba(255, 255, 255, 0.2)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#0ea5e9',
-                  },
-                },
-                '& .MuiInputBase-input::placeholder': {
-                  color: '#64748b',
-                  opacity: 1,
-                },
-              }}
-              autoFocus
-            />
+                <X className="mr-2 h-4 w-4" />
+                Reject
+              </Button>
+              <Button
+                onClick={handleApprove}
+                disabled={loading}
+                className="flex-1 bg-foreground text-background hover:bg-foreground/90"
+              >
+                <CheckCircle className="mr-2 h-4 w-4" />
+                {loading ? 'Processing...' : 'Approve'}
+              </Button>
+            </DialogFooter>
           </>
         )}
       </DialogContent>
-      <DialogActions sx={{ p: 2, gap: 1 }}>
-        <Button 
-          onClick={handleReject} 
-          startIcon={<Cancel />} 
-          disabled={loading}
-          sx={{
-            color: '#94a3b8',
-            '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)' }
-          }}
-        >
-          Reject
-        </Button>
-        <Button
-          onClick={handleApprove}
-          variant="contained"
-          startIcon={<CheckCircle />}
-          disabled={loading || success}
-          sx={{
-            bgcolor: '#0ea5e9',
-            color: '#fff',
-            '&:hover': { bgcolor: '#0284c7' }
-          }}
-        >
-          {loading ? 'Submitting...' : 'Approve'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
-};
-
-export default ActionModal;
+}

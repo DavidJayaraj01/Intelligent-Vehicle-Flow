@@ -1,29 +1,19 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  IconButton,
-  Box,
-  Typography,
-  Chip,
-} from '@mui/material';
-import {
-  Dashboard as DashboardIcon,
-  Videocam,
-  Timeline,
-  Assessment,
+  LayoutDashboard,
+  Upload,
+  Activity,
+  AlertTriangle,
+  BarChart3,
+  FileText,
   Settings,
   ChevronLeft,
   ChevronRight,
-  CloudUpload,
-  QueuePlayNext,
-  LocalHospital,
-} from '@mui/icons-material';
+  Video,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface SidebarProps {
   open: boolean;
@@ -33,310 +23,181 @@ interface SidebarProps {
 }
 
 const cameras = [
-  { id: 'cam01', name: 'Main Intersection North', status: 'active' },
-  { id: 'cam02', name: 'Highway Entry Point', status: 'active' },
-  { id: 'cam03', name: 'City Center Junction', status: 'active' },
-  { id: 'cam04', name: 'Airport Road Gate', status: 'maintenance' },
+  { id: 'cam01', name: 'Main Intersection North', status: 'active' as const },
+  { id: 'cam02', name: 'Highway Entry Point', status: 'active' as const },
+  { id: 'cam03', name: 'City Center Junction', status: 'active' as const },
+  { id: 'cam04', name: 'Airport Road Gate', status: 'maintenance' as const },
 ];
 
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, path: '/dashboard' },
-  { id: 'upload', label: 'Upload', icon: CloudUpload, path: '/upload' },
-  { id: 'queue-detection', label: 'Queue Detection', icon: QueuePlayNext, path: '/queue-detection' },
-  { id: 'emergency', label: 'Emergency', icon: LocalHospital, path: '/emergency' },
-  { id: 'analytics', label: 'Analytics', icon: Timeline, path: '/analytics' },
-  { id: 'reports', label: 'Reports', icon: Assessment, path: '/reports' },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+  { id: 'upload', label: 'Upload', icon: Upload, path: '/upload' },
+  { id: 'queue-detection', label: 'Queue Detection', icon: Activity, path: '/queue-detection' },
+  { id: 'emergency', label: 'Emergency', icon: AlertTriangle, path: '/emergency' },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
+  { id: 'reports', label: 'Reports', icon: FileText, path: '/reports' },
   { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCameraSelect }) => {
-  const drawerWidth = 280;
-  const collapsedWidth = 64;
   const navigate = useNavigate();
   const location = useLocation();
 
-  const drawerContent = (
-    <>
+  const content = (
+    <div className="flex flex-col h-full bg-card text-foreground">
       {/* Logo & Toggle */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: open ? 'space-between' : 'center',
-          px: open ? 2 : 1,
-          py: 2,
-          minHeight: 64,
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-        }}
-      >
+      <div className={cn(
+        "flex items-center border-b border-border px-4 py-4 min-h-16",
+        open ? "justify-between" : "justify-center"
+      )}>
         {open && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                borderRadius: '8px',
-                background: 'linear-gradient(135deg, #0ea5e9 0%, #22c55e 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '0.9rem' }}>VF</Typography>
-            </Box>
-            <Box>
-              <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.2 }}>
-                Vehicle Flow
-              </Typography>
-              <Typography sx={{ color: '#22c55e', fontWeight: 600, fontSize: '0.75rem', lineHeight: 1.2 }}>
-                Analyzer
-              </Typography>
-            </Box>
-          </Box>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-green-500 flex items-center justify-center">
+              <span className="text-white font-bold text-sm font-mono">VFA</span>
+            </div>
+            <div>
+              <div className="text-sm font-bold leading-none mb-1 font-mono">VFA</div>
+              <div className="text-xs text-green-400 leading-none font-mono">VEHICLE FLOW</div>
+            </div>
+          </div>
         )}
-        <IconButton
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={onToggle}
-          size="small"
-          sx={{
-            color: 'rgba(255, 255, 255, 0.5)',
-            '&:hover': {
-              color: '#0ea5e9',
-              bgcolor: 'rgba(14, 165, 233, 0.1)',
-            },
-          }}
+          className="hover:bg-muted"
         >
-          {open ? <ChevronLeft fontSize="small" /> : <ChevronRight fontSize="small" />}
-        </IconButton>
-      </Box>
+          {open ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </Button>
+      </div>
 
       {/* Navigation */}
-      <Box sx={{ py: 1 }}>
+      <div className="py-2 flex-1 overflow-y-auto">
         {open && (
-          <Typography
-            sx={{
-              px: 2,
-              py: 1,
-              fontSize: '0.65rem',
-              fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.35)',
-              letterSpacing: '0.5px',
-              textTransform: 'uppercase',
-            }}
-          >
+          <div className="px-4 py-2 text-xs font-semibold text-muted-foreground tracking-wider uppercase">
             Menu
-          </Typography>
+          </div>
         )}
-        <List sx={{ px: 1 }}>
+        <nav className="px-2 space-y-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
             return (
-              <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
-                <ListItemButton
-                  onClick={() => navigate(item.path)}
-                  sx={{
-                    borderRadius: '12px',
-                    py: 1.5,
-                    px: 2,
-                    minHeight: 48,
-                    justifyContent: open ? 'flex-start' : 'center',
-                    color: isActive ? '#3b82f6' : 'rgba(255, 255, 255, 0.6)',
-                    background: isActive ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.1))' : 'transparent',
-                    border: isActive ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid transparent',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    '&:hover': {
-                      color: '#ffffff',
-                      background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(139, 92, 246, 0.08))',
-                      borderColor: 'rgba(59, 130, 246, 0.2)',
-                      transform: 'translateX(4px)',
-                    },
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: '3px',
-                      background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                      opacity: isActive ? 1 : 0,
-                      transition: 'opacity 0.3s',
-                    }
-                  }}
-                >
-                  <ListItemIcon
-                    sx={{
-                      color: 'inherit',
-                      minWidth: open ? 40 : 0,
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Icon sx={{ fontSize: 22 }} />
-                  </ListItemIcon>
-                  {open && (
-                    <ListItemText
-                      primary={item.label}
-                      primaryTypographyProps={{
-                        fontSize: '0.9rem',
-                        fontWeight: isActive ? 700 : 500,
-                        letterSpacing: '0.02em',
-                      }}
-                    />
-                  )}
-                </ListItemButton>
-              </ListItem>
+              <button
+                key={item.id}
+                onClick={() => navigate(item.path)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-mono text-sm",
+                  "hover:bg-accent hover:text-accent-foreground hover:translate-x-1",
+                  open ? "justify-start" : "justify-center",
+                  isActive
+                    ? "bg-primary/10 text-primary border border-primary/30 shadow-lg shadow-primary/20"
+                    : "text-muted-foreground border border-transparent"
+                )}
+              >
+                <Icon className="h-5 w-5 flex-shrink-0" />
+                {open && <span className="truncate">{item.label}</span>}
+              </button>
             );
           })}
-        </List>
-      </Box>
+        </nav>
 
-      {/* Camera Feeds */}
-      {open && (
-        <Box sx={{ py: 2, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <Typography
-            sx={{
-              px: 2,
-              py: 1,
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              color: 'rgba(255, 255, 255, 0.4)',
-              letterSpacing: '1px',
-              textTransform: 'uppercase',
-            }}
-          >
-            Camera Feeds
-          </Typography>
-          <List sx={{ px: 1, flex: 1, overflow: 'auto' }}>
-            {cameras.map((camera) => {
-              const isSelected = selectedCamera === camera.id;
-              return (
-                <ListItem key={camera.id} disablePadding sx={{ mb: 0.5 }}>
-                  <ListItemButton
-                    selected={isSelected}
+        {/* Camera Feeds */}
+        {open && (
+          <div className="mt-6">
+            <div className="px-4 py-2 text-xs font-semibold text-muted-foreground tracking-wider uppercase">
+              Cameras
+            </div>
+            <div className="px-2 space-y-1">
+              {cameras.map((camera) => {
+                const isSelected = selectedCamera === camera.id;
+                return (
+                  <button
+                    key={camera.id}
                     onClick={() => onCameraSelect(camera.id)}
-                    sx={{
-                      borderRadius: '12px',
-                      py: 1.25,
-                      px: 2,
-                      color: isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.6)',
-                      background: isSelected ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.1))' : 'transparent',
-                      border: isSelected ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid transparent',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      '&:hover': {
-                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 182, 212, 0.08))',
-                        borderColor: 'rgba(16, 185, 129, 0.2)',
-                        color: '#ffffff',
-                        transform: 'translateX(4px)',
-                      },
-                      '&.Mui-selected': {
-                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.1))',
-                        '&:hover': {
-                          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 182, 212, 0.12))',
-                        },
-                      },
-                    }}
+                    className={cn(
+                      "w-full flex items-start gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                      "hover:bg-accent hover:translate-x-1",
+                      isSelected
+                        ? "bg-green-500/10 border border-green-500/30"
+                        : "border border-transparent"
+                    )}
                   >
-                    <ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>
-                      <Videocam sx={{ fontSize: 20 }} />
-                    </ListItemIcon>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography
-                        sx={{
-                          fontSize: '0.85rem',
-                          fontWeight: isSelected ? 600 : 500,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          mb: 0.5,
-                        }}
-                      >
+                    <Video className={cn(
+                      "h-5 w-5 flex-shrink-0 mt-0.5",
+                      isSelected ? "text-green-400" : "text-muted-foreground"
+                    )} />
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className={cn(
+                        "text-sm font-mono truncate",
+                        isSelected ? "text-foreground font-medium" : "text-muted-foreground"
+                      )}>
+                        {camera.id.toUpperCase()}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate mt-0.5">
                         {camera.name}
-                      </Typography>
-                      <Chip
-                        label={camera.status}
-                        size="small"
-                        sx={{
-                          height: 20,
-                          fontSize: '0.65rem',
-                          fontWeight: 700,
-                          background:
-                            camera.status === 'active'
-                              ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.15))'
-                              : 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.15))',
-                          color: camera.status === 'active' ? '#10b981' : '#f59e0b',
-                          border: `1px solid ${camera.status === 'active' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
-                          '& .MuiChip-label': {
-                            px: 1,
-                          },
-                        }}
-                      />
-                    </Box>
-                  </ListItemButton>
-                </ListItem>
-              );
-            })}
-          </List>
-        </Box>
+                      </div>
+                      <div className={cn(
+                        "inline-block mt-1 px-2 py-0.5 rounded text-xs font-mono uppercase",
+                        camera.status === 'active'
+                          ? "bg-green-500/10 text-green-400 border border-green-500/30"
+                          : "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30"
+                      )}>
+                        {camera.status}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* System Status */}
+      {open && (
+        <div className="p-4 border-t border-border">
+          <div className="flex items-center gap-2 text-xs">
+            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-muted-foreground font-mono">SYSTEM ACTIVE</span>
+          </div>
+          <div className="text-xs text-muted-foreground font-mono mt-1">
+            {new Date().toLocaleTimeString()}
+          </div>
+        </div>
       )}
-      
-      {/* Spacer for collapsed state */}
-      {!open && <Box sx={{ flex: 1 }} />}
-    </>
+    </div>
   );
 
   return (
     <>
-      {/* Desktop Drawer */}
-      <Drawer
-        variant="permanent"
-        sx={{
-          width: open ? drawerWidth : collapsedWidth,
-          flexShrink: 0,
-          display: { xs: 'none', md: 'block' },
-          '& .MuiDrawer-paper': {
-            width: open ? drawerWidth : collapsedWidth,
-            boxSizing: 'border-box',
-            transition: 'width 0.2s ease-in-out',
-            backgroundColor: '#0f172a',
-            borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-            color: 'white',
-            overflowX: 'hidden',
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100vh',
-            position: 'fixed',
-            top: 0,
-            left: 0,
-          },
-        }}
+      {/* Desktop Sidebar */}
+      <aside
+        className={cn(
+          "hidden md:block fixed left-0 top-0 h-screen bg-card border-r border-border transition-all duration-300 z-40",
+          open ? "w-[280px]" : "w-16"
+        )}
       >
-        {drawerContent}
-      </Drawer>
+        {content}
+      </aside>
 
-      {/* Mobile Drawer */}
-      <Drawer
-        variant="temporary"
-        open={open}
-        onClose={onToggle}
-        ModalProps={{
-          keepMounted: true, // Better open performance on mobile
-          disableScrollLock: true,
-        }}
-        sx={{
-          display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': {
-            width: drawerWidth,
-            boxSizing: 'border-box',
-            backgroundColor: '#0f172a',
-            borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-            color: 'white',
-          },
-        }}
+      {/* Mobile Sidebar Overlay */}
+      {open && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+          onClick={onToggle}
+        />
+      )}
+
+      {/* Mobile Sidebar */}
+      <aside
+        className={cn(
+          "md:hidden fixed left-0 top-0 h-screen w-[280px] bg-card border-r border-border transition-transform duration-300 z-50",
+          open ? "translate-x-0" : "-translate-x-full"
+        )}
       >
-        {drawerContent}
-      </Drawer>
+        {content}
+      </aside>
     </>
   );
 };

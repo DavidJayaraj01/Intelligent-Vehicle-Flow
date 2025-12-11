@@ -1,25 +1,22 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { Download, Filter } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  Typography,
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
+  TableHeader,
   TableRow,
-  TablePagination,
-  Button,
-  Box,
+} from '@/components/ui/table';
+import {
   Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Chip,
-} from '@mui/material';
-import { Download } from '@mui/icons-material';
-import { exportToCSV } from '../utils/exportCSV';
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 interface Event {
   id: number;
@@ -36,289 +33,190 @@ interface EventTableProps {
   loading?: boolean;
 }
 
-const EventTable: React.FC<EventTableProps> = ({ events, loading = false }) => {
+export function EventTable({ events, loading = false }: EventTableProps) {
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [cameraFilter, setCameraFilter] = useState('');
-  const [classFilter, setClassFilter] = useState('');
-  const [laneFilter, setLaneFilter] = useState('');
+  const [rowsPerPage] = useState(10);
+  const [cameraFilter, setCameraFilter] = useState<string>('all');
+  const [classFilter, setClassFilter] = useState<string>('all');
 
-  // Apply filters
   const filteredEvents = events.filter((event) => {
-    if (cameraFilter && event.camera_id !== cameraFilter) return false;
-    if (classFilter && event.class !== classFilter) return false;
-    if (laneFilter && event.lane_id !== laneFilter) return false;
+    if (cameraFilter !== 'all' && event.camera_id !== cameraFilter) return false;
+    if (classFilter !== 'all' && event.class !== classFilter) return false;
     return true;
   });
 
-  const handleChangePage = (_event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
+  const paginatedEvents = filteredEvents.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const handleExport = () => {
-    exportToCSV(filteredEvents, `vehicle_events_${new Date().toISOString()}.csv`);
-  };
-
-  // Get unique values for filters
   const cameras = Array.from(new Set(events.map((e) => e.camera_id)));
   const classes = Array.from(new Set(events.map((e) => e.class)));
-  const lanes = Array.from(new Set(events.map((e) => e.lane_id).filter(Boolean)));
 
-  const getClassColor = (cls: string) => {
-    const colorMap: Record<string, string> = {
-      'car': '#0ea5e9',
-      'truck': '#f59e0b',
-      'bus': '#6366f1',
-      'motorcycle': '#ef4444',
-    };
-    return colorMap[cls.toLowerCase()] || '#94a3b8';
+  const handleExport = () => {
+    const csv = [
+      ['ID', 'Camera', 'Track ID', 'Class', 'Timestamp', 'Lane', 'Confidence'].join(','),
+      ...filteredEvents.map((e) =>
+        [e.id, e.camera_id, e.track_id, e.class, e.timestamp, e.lane_id || '', e.confidence].join(',')
+      ),
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vehicle_events_${new Date().toISOString()}.csv`;
+    a.click();
   };
 
   return (
-    <Card 
-      className="glass-card fade-in"
-      sx={{
-        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.03) 100%)',
-        backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: '20px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        '&:hover': {
-          borderColor: 'rgba(59, 130, 246, 0.3)',
-          boxShadow: '0 12px 48px rgba(0, 0, 0, 0.4)',
-        }
-      }}
-    >
-      <CardContent sx={{ p: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-          <Box>
-            <Typography 
-              variant="h5"
-              sx={{ 
-                fontWeight: 800,
-                color: '#ffffff',
-                mb: 0.5,
-              }}
-            >
-              Recent Events
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-              {filteredEvents.length} total events
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            startIcon={<Download />}
-            onClick={handleExport}
-            disabled={filteredEvents.length === 0}
-            sx={{
-              background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-              color: '#ffffff',
-              textTransform: 'none',
-              fontWeight: 700,
-              px: 3,
-              py: 1.5,
-              borderRadius: '12px',
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
-              transition: 'all 0.3s',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
-                boxShadow: '0 6px 16px rgba(59, 130, 246, 0.6)',
-                transform: 'translateY(-2px)',
-              },
-              '&:disabled': {
-                background: 'rgba(255, 255, 255, 0.05)',
-                color: 'rgba(255, 255, 255, 0.3)',
-                boxShadow: 'none',
-              }
-            }}
-          >
-            Export CSV
-          </Button>
-        </Box>
+    <div className="animate-fade-in rounded-xl border border-border bg-card" style={{ animationDelay: '300ms' }}>
+      {/* Header */}
+      <div className="flex flex-col gap-4 border-b border-border p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+            Event Log
+          </h3>
+          <p className="mt-1 text-lg font-semibold text-foreground">
+            {filteredEvents.length} Events
+          </p>
+        </div>
 
-        {/* Filters */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>
-          <FormControl size="small" sx={{ minWidth: 170 }}>
-            <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.6)', fontWeight: 600 }}>Camera</InputLabel>
-            <Select 
-              value={cameraFilter} 
-              onChange={(e) => setCameraFilter(e.target.value)} 
-              label="Camera"
-              sx={{
-                color: '#ffffff',
-                bgcolor: 'rgba(255, 255, 255, 0.03)',
-                borderRadius: '12px',
-                fontWeight: 600,
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(255, 255, 255, 0.15)',
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(59, 130, 246, 0.4)',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#3b82f6',
-                },
-              }}
-            >
-              <MenuItem value="">All Cameras</MenuItem>
-              {cameras.map((cam) => (
-                <MenuItem key={cam} value={cam}>
-                  {cam}
-                </MenuItem>
-              ))}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={cameraFilter} onValueChange={setCameraFilter}>
+              <SelectTrigger className="w-32 border-border bg-secondary text-foreground">
+                <SelectValue placeholder="Camera" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Cameras</SelectItem>
+                {cameras.map((cam) => (
+                  <SelectItem key={cam} value={cam}>
+                    {cam.toUpperCase()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
-          </FormControl>
+          </div>
 
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>Class</InputLabel>
-            <Select 
-              value={classFilter} 
-              onChange={(e) => setClassFilter(e.target.value)} 
-              label="Class"
-              sx={{
-                color: '#ffffff',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(255, 255, 255, 0.08)',
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(255, 255, 255, 0.2)',
-                },
-              }}
-            >
-              <MenuItem value="">All Classes</MenuItem>
+          <Select value={classFilter} onValueChange={setClassFilter}>
+            <SelectTrigger className="w-28 border-border bg-secondary text-foreground">
+              <SelectValue placeholder="Class" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
               {classes.map((cls) => (
-                <MenuItem key={cls} value={cls}>
-                  {cls}
-                </MenuItem>
+                <SelectItem key={cls} value={cls}>
+                  {cls.charAt(0).toUpperCase() + cls.slice(1)}
+                </SelectItem>
               ))}
-            </Select>
-          </FormControl>
+            </SelectContent>
+          </Select>
 
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>Lane</InputLabel>
-            <Select 
-              value={laneFilter} 
-              onChange={(e) => setLaneFilter(e.target.value)} 
-              label="Lane"
-              sx={{
-                color: '#ffffff',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(255, 255, 255, 0.08)',
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(255, 255, 255, 0.2)',
-                },
-              }}
-            >
-              <MenuItem value="">All Lanes</MenuItem>
-              {lanes.map((lane) => (
-                <MenuItem key={lane} value={lane}>
-                  {lane}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            className="gap-2 border-border text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <Download className="h-4 w-4" />
+            Export
+          </Button>
+        </div>
+      </div>
 
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ borderBottom: '2px solid rgba(255, 255, 255, 0.08)' }}>
-                <TableCell sx={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: 700 }}>Camera</TableCell>
-                <TableCell sx={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: 700 }}>Track ID</TableCell>
-                <TableCell sx={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: 700 }}>Class</TableCell>
-                <TableCell sx={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: 700 }}>Timestamp</TableCell>
-                <TableCell sx={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: 700 }}>Lane</TableCell>
-                <TableCell align="right" sx={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: 700 }}>Confidence</TableCell>
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border hover:bg-transparent">
+              <TableHead className="font-mono text-xs uppercase text-muted-foreground">ID</TableHead>
+              <TableHead className="font-mono text-xs uppercase text-muted-foreground">Camera</TableHead>
+              <TableHead className="font-mono text-xs uppercase text-muted-foreground">Track</TableHead>
+              <TableHead className="font-mono text-xs uppercase text-muted-foreground">Class</TableHead>
+              <TableHead className="font-mono text-xs uppercase text-muted-foreground">Time</TableHead>
+              <TableHead className="font-mono text-xs uppercase text-muted-foreground">Lane</TableHead>
+              <TableHead className="font-mono text-xs uppercase text-muted-foreground text-right">Conf.</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                  Loading events...
+                </TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'rgba(255, 255, 255, 0.5)' }}>
-                    Loading...
+            ) : paginatedEvents.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                  No events found
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginatedEvents.map((event) => (
+                <TableRow
+                  key={event.id}
+                  className="border-border transition-colors hover:bg-accent/50"
+                >
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    #{event.id}
+                  </TableCell>
+                  <TableCell>
+                    <span className="rounded border border-border bg-secondary px-2 py-0.5 font-mono text-xs text-foreground">
+                      {event.camera_id.toUpperCase()}
+                    </span>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-foreground">
+                    {event.track_id}
+                  </TableCell>
+                  <TableCell>
+                    <span className="rounded-full border border-foreground/20 bg-foreground/10 px-2 py-0.5 font-mono text-xs text-foreground">
+                      {event.class}
+                    </span>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {new Date(event.timestamp).toLocaleTimeString()}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {event.lane_id || '—'}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs text-foreground">
+                    {(event.confidence * 100).toFixed(0)}%
                   </TableCell>
                 </TableRow>
-              ) : filteredEvents.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'rgba(255, 255, 255, 0.5)' }}>
-                    No events found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredEvents.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((event, idx) => (
-                  <TableRow 
-                    key={event.id}
-                    className="fade-in"
-                    sx={{
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                      transition: 'all 0.2s',
-                      animation: `fadeIn 0.3s ease-out ${idx * 0.05}s backwards`,
-                      '&:hover': {
-                        backgroundColor: 'rgba(59, 130, 246, 0.08)',
-                        transform: 'scale(1.01)',
-                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.15)',
-                      }
-                    }}
-                  >
-                    <TableCell sx={{ color: '#ffffff' }}>{event.camera_id}</TableCell>
-                    <TableCell sx={{ color: '#ffffff' }}>{event.track_id}</TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={event.class}
-                        size="small"
-                        sx={{
-                          backgroundColor: `${getClassColor(event.class)}20`,
-                          color: getClassColor(event.class),
-                          fontWeight: 600,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.875rem' }}>
-                      {new Date(event.timestamp).toLocaleString()}
-                    </TableCell>
-                    <TableCell sx={{ color: '#ffffff' }}>{event.lane_id || '-'}</TableCell>
-                    <TableCell 
-                      align="right" 
-                      sx={{ 
-                        color: '#ffffff',
-                        fontWeight: 600
-                      }}
-                    >
-                      {(event.confidence * 100).toFixed(1)}%
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25, 50]}
-          component="div"
-          count={filteredEvents.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          sx={{
-            color: 'rgba(255, 255, 255, 0.7)',
-            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-              margin: 0,
-            }
-          }}
-        />
-      </CardContent>
-    </Card>
+      {/* Pagination */}
+      <div className="flex items-center justify-between border-t border-border px-6 py-4">
+        <p className="font-mono text-xs text-muted-foreground">
+          Showing {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, filteredEvents.length)} of {filteredEvents.length}
+        </p>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage(Math.max(0, page - 1))}
+            disabled={page === 0}
+            className="border-border"
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage(page + 1)}
+            disabled={(page + 1) * rowsPerPage >= filteredEvents.length}
+            className="border-border"
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+    </div>
   );
-};
-
-export default EventTable;
+}

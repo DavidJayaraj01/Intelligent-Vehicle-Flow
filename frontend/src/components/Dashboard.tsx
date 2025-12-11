@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Grid, Alert, IconButton } from '@mui/material';
-import { Menu as MenuIcon } from '@mui/icons-material';
+import { RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { getEvents, getMetrics, getMetricsTimeSeries } from '../services/api';
 import wsService from '../services/websocket';
-import KPITiles from './KPITiles';
-import RealtimeChart from './RealtimeChart';
-import EventTable from './EventTable';
-import ReplayPanel from './ReplayPanel';
-import ActionModal from './ActionModal';
+import { KPITiles } from './KPITiles';
+import { RealtimeChart } from './RealtimeChart';
+import { EventTable } from './EventTable';
+import { ActionModal } from './ActionModal';
 import Sidebar from './Sidebar';
-import CameraFeed from './CameraFeed';
-
+import { CameraFeed } from './CameraFeed';
+  
 interface Metrics {
   total_events: number;
   avg_dwell_time: number;
@@ -147,7 +146,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0a0a0a' }}>
+    <div className="flex min-h-screen bg-background">
       {/* Sidebar */}
       <Sidebar
         open={sidebarOpen}
@@ -157,94 +156,81 @@ const Dashboard: React.FC = () => {
       />
 
       {/* Main Content */}
-      <Box
-        sx={{
-          flexGrow: 1,
-          ml: { xs: 0, md: sidebarOpen ? '280px' : '64px' },
-          transition: 'margin-left 0.3s ease-in-out',
-          bgcolor: '#0a0a0a',
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
+      <div
+        className={`flex-1 transition-all duration-300 ${
+          sidebarOpen ? 'md:ml-[280px]' : 'md:ml-16'
+        }`}
       >
-        <Box sx={{ width: '100%', maxWidth: 1600, p: { xs: 2, sm: 3, md: 4, lg: 5 }, pt: { xs: 2, sm: 3, md: 4 } }}>
-        {/* Mobile Menu Button */}
-        <IconButton
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          sx={{
-            display: { xs: 'flex', md: 'none' },
-            position: 'fixed',
-            top: 16,
-            left: 16,
-            zIndex: 1200,
-            bgcolor: '#1e293b',
-            color: '#ffffff',
-            '&:hover': {
-              bgcolor: '#334155',
-            },
-          }}
-        >
-          <MenuIcon />
-        </IconButton>
+        <div className="max-w-[1600px] mx-auto p-4 sm:p-6 md:p-8 lg:p-10">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground font-mono">
+                Dashboard
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Real-time Surveillance System
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchData}
+                className="gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </Button>
+              <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-green-500/10 border border-green-500/20">
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-sm font-mono text-green-400">LIVE</span>
+              </div>
+            </div>
+          </div>
 
-        {/* Error Alert */}
-        {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              mb: 4,
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: '12px',
-              color: '#ffffff',
-              '& .MuiAlert-icon': {
-                color: '#ef4444'
-              }
-            }}
-            onClose={() => setError(null)}
-          >
-            {error}
-          </Alert>
-        )}
+          {/* Error Alert */}
+          {error && (
+            <div className="mb-6 p-4 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive">
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
 
-        {/* Camera Feed */}
-        <Box sx={{ mb: 6 }}>
-          <CameraFeed
-            cameraId={selectedCamera}
-            cameraName={getCameraName(selectedCamera)}
-            detections={detections}
-          />
-        </Box>
+          {/* KPI Tiles */}
+          <div className="mb-8">
+            <KPITiles
+              totalEvents={metrics.total_events}
+              avgDwellTime={metrics.avg_dwell_time}
+              queueLength={metrics.queue_length}
+            />
+          </div>
 
-        {/* KPI Tiles */}
-        <Box sx={{ mb: 6 }}>
-          <KPITiles
-            totalEvents={metrics.total_events}
-            avgDwellTime={metrics.avg_dwell_time}
-            queueLength={metrics.queue_length}
-          />
-        </Box>
+          {/* Chart and Camera Feed */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+            <div className="lg:col-span-7">
+              <RealtimeChart data={chartData} title="Vehicles Per Minute" />
+            </div>
+            <div className="lg:col-span-5">
+              <CameraFeed
+                cameraId={selectedCamera}
+                cameraName={getCameraName(selectedCamera)}
+                detections={detections}
+              />
+            </div>
+          </div>
 
-        {/* Chart and Replay Panel */}
-        <Grid container spacing={4} sx={{ mb: 6 }}>
-          <Grid size={{ xs: 12, lg: 8 }}>
-            <RealtimeChart data={chartData} />
-          </Grid>
-          <Grid size={{ xs: 12, lg: 4 }}>
-            <ReplayPanel />
-          </Grid>
-        </Grid>
+          {/* Events Table */}
+          <EventTable events={events} loading={loading} />
+        </div>
+      </div>
 
-        {/* Events Table */}
-        <EventTable events={events} loading={loading} />
-
-        {/* Action Recommendation Modal */}
-        <ActionModal open={modalOpen} onClose={() => setModalOpen(false)} recommendation={recommendation} />
-        </Box>
-      </Box>
-    </Box>
+      {/* Action Recommendation Modal */}
+      <ActionModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        recommendation={recommendation}
+      />
+    </div>
   );
 };
 

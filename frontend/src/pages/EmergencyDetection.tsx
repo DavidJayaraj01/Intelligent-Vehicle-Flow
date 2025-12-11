@@ -1,26 +1,8 @@
 import React, { useState, useRef } from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  Grid,
-  Card,
-  CardContent,
-  LinearProgress,
-  Alert,
-  Chip,
-  IconButton,
-} from '@mui/material';
+import { Upload, Ambulance, AlertTriangle, Shield, Flame, Loader2, X, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import Sidebar from '../components/Sidebar';
-import {
-  CloudUpload,
-  VideoLibrary,
-  Image as ImageIcon,
-  Delete,
-  LocalHospital,
-  Warning,
-  Menu as MenuIcon,
-} from '@mui/icons-material';
+import { cn } from '@/lib/utils';
 
 interface DetectionCount {
   ambulance: number;
@@ -28,19 +10,12 @@ interface DetectionCount {
   police_car: number;
 }
 
-interface Detection {
-  class: string;
-  confidence: number;
-  bbox: number[];
-}
-
 interface EmergencyStatistics {
   detectionCounts: DetectionCount;
   totalDetections: number;
   framesWithDetections?: number;
   totalFrames?: number;
-  maxConfidence?: DetectionCount;
-  detections?: Detection[];
+  maxConfidence?: number;
 }
 
 interface DetectionResult {
@@ -49,78 +24,73 @@ interface DetectionResult {
   videoUrl?: string;
   imageData?: string;
   statistics: EmergencyStatistics;
-  processingTime: number;
+  processingTime?: number;
 }
 
 const EmergencyDetection: React.FC = () => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [result, setResult] = useState<DetectionResult | null>(null);
-  const [error, setError] = useState<string>('');
-  // const [uploadProgress, setUploadProgress] = useState(0);  // Unused - LinearProgress is indeterminate
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedCamera, setSelectedCamera] = useState<string>('cam01');
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [results, setResults] = useState<DetectionResult | null>(null);
+  const [error, setError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      const validTypes = ['video/mp4', 'video/avi', 'video/mov', 'image/jpeg', 'image/png', 'image/jpg'];
-      if (!validTypes.includes(file.type)) {
-        setError('Please upload a valid video (MP4, AVI, MOV) or image (JPG, PNG) file');
-        return;
-      }
-
-      // Validate file size (max 500MB)
-      if (file.size > 500 * 1024 * 1024) {
-        setError('File size must be less than 500MB');
-        return;
-      }
-
-      setSelectedFile(file);
-      setError('');
-      setResult(null);
-
-      // Create preview URL
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+  const handleFileChange = (selectedFile: File) => {
+    // Validate file type
+    const validTypes = ['video/mp4', 'video/avi', 'video/mov', 'image/jpeg', 'image/png', 'image/jpg'];
+    if (!validTypes.includes(selectedFile.type)) {
+      setError('Please upload a valid video (MP4, AVI, MOV) or image (JPG, PNG) file');
+      return;
     }
-  };
 
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleClearFile = () => {
-    setSelectedFile(null);
-    setPreviewUrl('');
-    setResult(null);
-    setError('');
-    // setUploadProgress(0);  // Unused
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    // Validate file size (max 500MB)
+    if (selectedFile.size > 500 * 1024 * 1024) {
+      setError('File size must be less than 500MB');
+      return;
     }
+
+    setFile(selectedFile);
+    setResults(null);
+    setError('');
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreview(reader.result as string);
+    };
+    reader.readAsDataURL(selectedFile);
   };
 
-  const handleProcess = async () => {
-    if (!selectedFile) return;
+  const handleAnalyze = async () => {
+    if (!file) return;
 
-    setIsProcessing(true);
+    setUploading(true);
     setError('');
-    // setUploadProgress(0);  // Unused
+    setUploadProgress(0);
+    const formData = new FormData();
+    formData.append('file', file);
 
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
 
-      console.log('Sending emergency detection request...');
-
-      const response = await fetch('/api/v1/emergency/detect', {
+      const response = await fetch('http://localhost:8000/api/v1/emergency/detect', {
         method: 'POST',
         body: formData,
       });
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -130,457 +100,311 @@ const EmergencyDetection: React.FC = () => {
       const data: DetectionResult = await response.json();
       console.log('Emergency detection response:', data);
 
-      // If video, fetch the video file
+      // If video, use the video URL
       if (data.isVideo && data.videoUrl) {
-        console.log('Fetching video from:', data.videoUrl);
-        const videoResponse = await fetch(data.videoUrl);
-        
-        if (!videoResponse.ok) {
-          throw new Error('Failed to load processed video');
-        }
-
-        const blob = await videoResponse.blob();
-        const videoUrl = URL.createObjectURL(blob);
-        
-        setResult({
+        console.log('Video URL:', data.videoUrl);
+        setResults({
           ...data,
-          videoUrl: videoUrl,
+          videoUrl: `http://localhost:8000${data.videoUrl}`,
         });
       } else {
-        setResult(data);
+        setResults(data);
       }
-
-      // setUploadProgress(100);  // Unused
     } catch (err) {
       console.error('Emergency detection error:', err);
       setError(err instanceof Error ? err.message : 'Failed to process file');
     } finally {
-      setIsProcessing(false);
+      setUploading(false);
+      setTimeout(() => setUploadProgress(0), 1000);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      handleFileChange(selectedFile);
+    }
+  };
+
+  const handleClear = () => {
+    setFile(null);
+    setPreview(null);
+    setResults(null);
+    setError('');
+    setUploadProgress(0);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDownloadResult = () => {
+    if (results?.videoUrl || results?.imageData) {
+      const link = document.createElement('a');
+      link.href = results.videoUrl || results.imageData || '';
+      link.download = `emergency_detection_${Date.now()}.${results.isVideo ? 'mp4' : 'jpg'}`;
+      link.click();
     }
   };
 
   const getEmergencyIcon = (type: string) => {
     switch (type) {
       case 'ambulance':
-        return '🚑';
+        return <Ambulance className="h-6 w-6 text-yellow-400" />;
       case 'fire_truck':
-        return '🚒';
+        return <Flame className="h-6 w-6 text-orange-400" />;
       case 'police_car':
-        return '🚓';
+        return <Shield className="h-6 w-6 text-blue-400" />;
       default:
-        return '🚨';
+        return <AlertTriangle className="h-6 w-6" />;
     }
   };
 
   const getEmergencyColor = (type: string) => {
     switch (type) {
       case 'ambulance':
-        return '#fbbf24'; // Yellow
+        return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
       case 'fire_truck':
-        return '#f97316'; // Orange
+        return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
       case 'police_car':
-        return '#3b82f6'; // Blue
+        return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
       default:
-        return '#64748b';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
+  const isVideo = file?.type.startsWith('video/');
+
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0a0e1a' }}>
+    <div className="flex min-h-screen bg-background">
       <Sidebar
         open={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         selectedCamera={selectedCamera}
         onCameraSelect={setSelectedCamera}
       />
-      
-      <Box 
-        sx={{ 
-          flexGrow: 1,
-          ml: { xs: 0, md: sidebarOpen ? '280px' : '64px' },
-          transition: 'margin-left 0.3s ease-in-out',
-          minHeight: '100vh',
-          bgcolor: '#0a0a0a',
-          display: 'flex',
-          justifyContent: 'center',
-        }}
-      >
-        <Box sx={{ maxWidth: 1400, width: '100%', p: { xs: 2, sm: 3, md: 4 } }}>
-        {/* Mobile Menu Button */}
-        <IconButton
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          sx={{
-            display: { xs: 'flex', md: 'none' },
-            position: 'fixed',
-            top: 16,
-            left: 16,
-            zIndex: 1200,
-            bgcolor: '#1e293b',
-            color: '#ffffff',
-            '&:hover': {
-              bgcolor: '#334155',
-            },
-          }}
-        >
-          <MenuIcon />
-        </IconButton>
 
-        {/* Header */}
-        <Box sx={{ mb: { xs: 4, sm: 6, md: 8 } }}>
-          <Typography
-            variant="h2"
-            sx={{
-              fontWeight: 900,
-              fontSize: { xs: '2.2rem', sm: '2.8rem', md: '3.8rem' },
-              color: '#ffffff',
-              mb: 2.5,
-              letterSpacing: '-1px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-            }}
-          >
-            <LocalHospital sx={{ color: '#ef4444', fontSize: { xs: '2rem', md: '3rem' } }} />
-            Emergency Detection
-          </Typography>
-          <Typography 
-            variant="h5"
-            sx={{ 
-              color: 'rgba(255, 255, 255, 0.6)',
-              fontWeight: 400,
-              fontSize: { xs: '1.05rem', md: '1.25rem' },
-              maxWidth: '700px',
-              lineHeight: 1.6,
-            }}
-          >
-            AI-powered detection of ambulances, fire trucks, and police cars in real-time
-          </Typography>
-        </Box>
+      <div className={cn("flex-1 transition-all duration-300", sidebarOpen ? "md:ml-[280px]" : "md:ml-16")}>
+        <div className="max-w-[1600px] mx-auto p-4 sm:p-6 md:p-8 lg:p-10">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground font-mono">
+                <AlertTriangle className="inline-block h-8 w-8 text-destructive mr-3" />
+                Emergency Detection
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                AI-powered detection of ambulances, fire trucks, and police cars in real-time
+              </p>
+            </div>
+          </div>
 
-        <Grid container spacing={5}>
-          {/* Upload Section */}
-          <Grid size={{ xs: 12, lg: 6 }}>
-            <Card
-              elevation={0}
-              sx={{
-                borderRadius: '20px',
-                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
-                backdropFilter: 'blur(16px)',
-                border: '1px solid rgba(239, 68, 68, 0.15)',
-                height: '100%',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  boxShadow: '0 12px 48px rgba(239, 68, 68, 0.15)',
-                },
-              }}
-            >
-              <CardContent sx={{ p: 4 }}>
-                <Typography
-                  variant="h5"
-                  sx={{ fontWeight: 700, mb: 0.5, color: '#ffffff', display: 'flex', alignItems: 'center', gap: 1.5 }}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Upload Section */}
+            <div className="rounded-xl border border-destructive/30 bg-card/80 backdrop-blur p-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Upload className="h-6 w-6 text-destructive" />
+                <h3 className="text-lg font-semibold">Upload Media</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-6">MP4, AVI, MOV, JPG, PNG (max 500MB)</p>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="video/*,image/*"
+                onChange={handleFileInputChange}
+                className="hidden"
+              />
+
+              {!file ? (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-muted-foreground/50 rounded-lg p-8 text-center cursor-pointer transition-all hover:border-destructive hover:bg-destructive/5"
                 >
-                  <CloudUpload sx={{ fontSize: 32 }} />
-                  Upload Media
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', display: 'block', mb: 4 }}>
-                  MP4, AVI, MOV, JPG, PNG
-                </Typography>
+                  <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-sm mb-1">Click to upload video or image</p>
+                  <p className="text-xs text-muted-foreground">Supported: MP4, AVI, MOV, JPG, PNG</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-border bg-muted/50 overflow-hidden">
+                    {isVideo ? (
+                      <video src={preview || ''} controls className="w-full max-h-[300px]" />
+                    ) : (
+                      <img src={preview || ''} alt="Preview" className="w-full max-h-[300px] object-contain" />
+                    )}
+                    <div className="p-3 border-t border-border">
+                      <div className="flex items-center gap-2 mb-1">
+                        {isVideo ? <Upload className="h-4 w-4 text-destructive" /> : <Upload className="h-4 w-4 text-destructive" />}
+                        <p className="text-sm font-medium flex-1">{file.name}</p>
+                        <Button variant="ghost" size="sm" onClick={handleClear} disabled={uploading}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Size: {(file.size / (1024 * 1024)).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
 
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="video/*,image/*"
-                  onChange={handleFileSelect}
-                  style={{ display: 'none' }}
-                />
-
-                {!selectedFile ? (
-                  <Box
-                    onClick={handleUploadClick}
-                    sx={{
-                      border: '2px dashed #475569',
-                      borderRadius: 2,
-                      p: 4,
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      bgcolor: '#0f172a',
-                      transition: 'all 0.3s',
-                      '&:hover': {
-                        borderColor: '#ef4444',
-                        bgcolor: '#1e293b',
-                      },
-                    }}
-                  >
-                    <CloudUpload sx={{ fontSize: 48, color: '#64748b', mb: 2 }} />
-                    <Typography variant="body1" sx={{ color: '#cbd5e1', mb: 1 }}>
-                      Click to upload video or image
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: '#64748b' }}>
-                      Supported: MP4, AVI, MOV, JPG, PNG (Max 500MB)
-                    </Typography>
-                  </Box>
-                ) : (
-                  <Box>
-                    <Box
-                      sx={{
-                        bgcolor: '#0f172a',
-                        borderRadius: 2,
-                        p: 2,
-                        mb: 2,
-                        position: 'relative',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {selectedFile.type.startsWith('video/') ? (
-                        <video
-                          src={previewUrl}
-                          controls
-                          style={{ width: '100%', maxHeight: 300, borderRadius: 8 }}
+                  {uploadProgress > 0 && (
+                    <div className="space-y-1">
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-destructive transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
                         />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {uploadProgress < 100 ? `Uploading... ${uploadProgress}%` : 'Processing...'}
+                      </p>
+                    </div>
+                  )}
+
+                  <Button
+                    variant="destructive"
+                    className="w-full gap-2"
+                    onClick={handleAnalyze}
+                    disabled={uploading || !!results}
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <AlertTriangle className="h-4 w-4" />
+                        Detect Emergency Vehicles
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              {error && (
+                <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Results Section */}
+            <div className="rounded-xl border border-destructive/30 bg-card/80 backdrop-blur p-8">
+              <div className="flex items-center gap-2 mb-4">
+                <AlertTriangle className="h-6 w-6 text-destructive" />
+                <h3 className="text-lg font-semibold">Detection Results</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-6">Emergency vehicle analysis</p>
+
+              {!results ? (
+                <div className="flex flex-col items-center justify-center h-[400px] border-2 border-dashed border-border rounded-lg text-muted-foreground">
+                  <AlertTriangle className="h-16 w-16 mb-4 opacity-30" />
+                  <p className="text-sm">No results yet. Upload and process a file to see detections.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Processed Output */}
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Processed Output with Annotations</p>
+                    <div className="rounded-lg border border-border bg-muted/50 overflow-hidden">
+                      {results.isVideo ? (
+                        <div>
+                          <video 
+                            src={results.videoUrl} 
+                            controls 
+                            className="w-full max-h-[300px]"
+                          />
+                          <div className="p-3 bg-card/50 text-center border-t border-border">
+                            <a
+                              href={results.videoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-destructive hover:underline"
+                            >
+                              Open Video in New Tab →
+                            </a>
+                          </div>
+                        </div>
                       ) : (
                         <img
-                          src={previewUrl}
-                          alt="Preview"
-                          style={{ width: '100%', maxHeight: 300, objectFit: 'contain', borderRadius: 8 }}
+                          src={results.imageData}
+                          alt="Processed result"
+                          className="w-full"
                         />
                       )}
-                    </Box>
+                    </div>
+                  </div>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      {selectedFile.type.startsWith('video/') ? (
-                        <VideoLibrary sx={{ color: '#ef4444', mr: 1 }} />
-                      ) : (
-                        <ImageIcon sx={{ color: '#ef4444', mr: 1 }} />
-                      )}
-                      <Typography variant="body2" sx={{ color: '#cbd5e1', flex: 1 }}>
-                        {selectedFile.name}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: '#64748b', mr: 2 }}>
-                        {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                      </Typography>
-                      <IconButton
-                        size="small"
-                        onClick={handleClearFile}
-                        sx={{ color: '#ef4444' }}
-                      >
-                        <Delete />
-                      </IconButton>
-                    </Box>
-
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      onClick={handleProcess}
-                      disabled={isProcessing}
-                      startIcon={<LocalHospital />}
-                      sx={{
-                        bgcolor: '#ef4444',
-                        '&:hover': { bgcolor: '#dc2626' },
-                        py: 1.5,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {isProcessing ? 'Processing...' : 'Detect Emergency Vehicles'}
-                    </Button>
-
-                    {isProcessing && (
-                      <LinearProgress
-                        sx={{
-                          mt: 2,
-                          bgcolor: '#1e293b',
-                          '& .MuiLinearProgress-bar': { bgcolor: '#ef4444' },
-                        }}
-                      />
-                    )}
-                  </Box>
-                )}
-
-                {error && (
-                  <Alert severity="error" sx={{ mt: 2 }}>
-                    {error}
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Results Section */}
-          <Grid size={{ xs: 12, lg: 6 }}>
-            <Card
-              elevation={0}
-              sx={{
-                borderRadius: '20px',
-                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
-                backdropFilter: 'blur(16px)',
-                border: '1px solid rgba(239, 68, 68, 0.15)',
-                height: '100%',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  boxShadow: '0 12px 48px rgba(239, 68, 68, 0.15)',
-                },
-              }}
-            >
-              <CardContent sx={{ p: 4 }}>
-                <Typography
-                  variant="h5"
-                  sx={{ fontWeight: 700, mb: 0.5, color: '#ffffff', display: 'flex', alignItems: 'center', gap: 1.5 }}
-                >
-                  <Warning sx={{ fontSize: 32 }} />
-                  Detection Results
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', display: 'block', mb: 4 }}>
-                  Emergency vehicle analysis
-                </Typography>
-
-                {!result ? (
-                  <Box
-                    sx={{
-                      textAlign: 'center',
-                      py: 8,
-                      color: '#64748b',
-                    }}
+                  {/* Download Button */}
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={handleDownloadResult}
                   >
-                    <LocalHospital sx={{ fontSize: 64, mb: 2, opacity: 0.3 }} />
-                    <Typography variant="body1">
-                      No results yet. Upload and process a file to see detections.
-                    </Typography>
-                  </Box>
-                ) : (
-                  <Box>
-                    {/* Processed Output */}
-                    <Box sx={{ mb: 3 }}>
-                      <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 1 }}>
-                        Processed Output with Annotations
-                      </Typography>
-                      <Card sx={{ bgcolor: '#0f172a', overflow: 'hidden' }}>
-                        {result.isVideo ? (
-                          <Box>
-                            <Box 
-                              component="iframe"
-                              src={result.videoUrl}
-                              sx={{
-                                width: '100%',
-                                height: 300,
-                                border: 'none',
-                                bgcolor: '#000'
-                              }}
-                            />
-                            <Box sx={{ p: 2, bgcolor: '#1e293b', textAlign: 'center' }}>
-                              <Button
-                                component="a"
-                                variant="contained"
-                                href={result.videoUrl || '#'}
-                                target="_blank"
-                                download="emergency_detection_result.mp4"
-                                sx={{
-                                  bgcolor: '#ef4444',
-                                  '&:hover': { bgcolor: '#dc2626' },
-                                }}
-                              >
-                                Open Video in New Tab
-                              </Button>
-                            </Box>
-                          </Box>
-                        ) : (
-                          <img
-                            src={result.imageData}
-                            alt="Processed result"
-                            style={{ width: '100%', display: 'block' }}
-                          />
-                        )}
-                      </Card>
-                    </Box>
+                    <Download className="h-4 w-4" />
+                    Download Results
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
 
-                    {/* Statistics */}
-                    <Box sx={{ mb: 3 }}>
-                      <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 2 }}>
-                        Detection Summary
-                      </Typography>
-                      
-                      <Grid container spacing={2}>
-                        <Grid size={{ xs: 6 }}>
-                          <Card sx={{ bgcolor: '#0f172a', p: 2, textAlign: 'center' }}>
-                            <Typography variant="h3" sx={{ color: '#ef4444', fontWeight: 700 }}>
-                              {result.statistics.totalDetections}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                              Total Detections
-                            </Typography>
-                          </Card>
-                        </Grid>
-                        <Grid size={{ xs: 6 }}>
-                          <Card sx={{ bgcolor: '#0f172a', p: 2, textAlign: 'center' }}>
-                            <Typography variant="h3" sx={{ color: '#10b981', fontWeight: 700 }}>
-                              {result.processingTime}s
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                              Processing Time
-                            </Typography>
-                          </Card>
-                        </Grid>
-                      </Grid>
-                    </Box>
+          {/* Statistics */}
+          {results && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <div className="rounded-lg border border-border bg-card p-6 text-center">
+                <div className="text-xs font-mono text-muted-foreground mb-2">TOTAL DETECTIONS</div>
+                <div className="text-4xl font-bold text-destructive font-mono">
+                  {results.statistics.totalDetections}
+                </div>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-6 text-center">
+                <div className="text-xs font-mono text-muted-foreground mb-2">PROCESSING TIME</div>
+                <div className="text-4xl font-bold text-green-400 font-mono">
+                  {results.processingTime?.toFixed(1) || 0}s
+                </div>
+              </div>
+            </div>
+          )}
 
-                    {/* Detection Counts */}
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 2 }}>
-                        Emergency Vehicle Counts
-                      </Typography>
-                      
-                      {Object.entries(result.statistics.detectionCounts).map(([type, count]) => (
-                        <Box
-                          key={type}
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            bgcolor: '#0f172a',
-                            p: 2,
-                            borderRadius: 1,
-                            mb: 1,
-                            borderLeft: `4px solid ${getEmergencyColor(type)}`,
-                          }}
-                        >
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Typography sx={{ fontSize: 24, mr: 2 }}>
-                              {getEmergencyIcon(type)}
-                            </Typography>
-                            <Typography variant="body1" sx={{ color: '#cbd5e1', fontWeight: 500 }}>
-                              {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            </Typography>
-                          </Box>
-                          <Chip
-                            label={count}
-                            sx={{
-                              bgcolor: getEmergencyColor(type),
-                              color: '#fff',
-                              fontWeight: 700,
-                            }}
-                          />
-                        </Box>
-                      ))}
-                    </Box>
-
-                    {result.isVideo && result.statistics.totalFrames && (
-                      <Box sx={{ mt: 2, p: 2, bgcolor: '#0f172a', borderRadius: 1 }}>
-                        <Typography variant="caption" sx={{ color: '#64748b' }}>
-                          Frames with detections: {result.statistics.framesWithDetections} / {result.statistics.totalFrames}
-                        </Typography>
-                      </Box>
+          {/* Emergency Vehicle Counts */}
+          {results && (
+            <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
+              <h3 className="text-lg font-semibold mb-4">Emergency Vehicle Counts</h3>
+              <div className="space-y-3">
+                {Object.entries(results.statistics.detectionCounts).map(([type, count]) => (
+                  <div
+                    key={type}
+                    className={cn(
+                      "flex items-center justify-between p-4 rounded-lg border-l-4",
+                      getEmergencyColor(type)
                     )}
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-        </Box>
-      </Box>
-    </Box>
+                  >
+                    <div className="flex items-center gap-3">
+                      {getEmergencyIcon(type)}
+                      <span className="font-medium">
+                        {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </span>
+                    </div>
+                    <div className="px-3 py-1 rounded-full bg-background font-mono font-bold">
+                      {count}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {results.isVideo && results.statistics.totalFrames && (
+                <div className="mt-4 p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">
+                    Frames with detections: {results.statistics.framesWithDetections} / {results.statistics.totalFrames}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 
