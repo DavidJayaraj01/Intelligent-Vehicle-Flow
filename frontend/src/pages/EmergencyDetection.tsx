@@ -104,9 +104,10 @@ const EmergencyDetection: React.FC = () => {
       // If video, use the video URL
       if (data.isVideo && data.videoUrl) {
         console.log('Video URL:', data.videoUrl);
+        const baseUrl = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
         setResults({
           ...data,
-          videoUrl: `http://localhost:8000${data.videoUrl}`,
+          videoUrl: `${baseUrl}${data.videoUrl}`,
         });
       } else {
         setResults(data);

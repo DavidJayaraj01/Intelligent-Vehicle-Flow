@@ -115,7 +115,8 @@ const QueueDetection: React.FC = () => {
       
       if (data.is_video && data.output_path) {
         // For videos, use the full URL
-        outputUrl = `http://localhost:8000${data.output_path}`;
+        const baseUrl = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
+        outputUrl = `${baseUrl}${data.output_path}`;
         console.log('Video URL:', outputUrl);
       } else if (data.output_base64) {
         // For images, decode base64
