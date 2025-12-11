@@ -1,7 +1,8 @@
 """Emergency Vehicle Detection API Endpoints"""
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import FileResponse
+from sqlalchemy.orm import Session
 from pathlib import Path
 import tempfile
 import shutil
@@ -9,8 +10,11 @@ from typing import Dict
 import os
 import base64
 import uuid
+from datetime import datetime
 
 from app.services.emergency_detector import EmergencyVehicleDetector
+from app.database import get_db
+from app.models.vehicle_event import VehicleEvent
 
 router = APIRouter(prefix="/emergency", tags=["emergency"])
 
@@ -31,13 +35,100 @@ def get_detector():
     return detector
 
 
+def _save_emergency_detections_to_db(db: Session, results: Dict, output_filename: str, original_filename: str):
+    """Save emergency vehicle detections to database"""
+    try:
+        camera_id = f"emergency_upload_{uuid.uuid4().hex[:8]}"
+        current_time = datetime.utcnow()
+        
+        # Get detections from results
+        if 'detections_by_frame' in results:
+            # Video processing
+            for frame_detections in results['detections_by_frame']:
+                for detection in frame_detections:
+                    # bbox is a list [x1, y1, x2, y2], convert to dict with metadata
+                    bbox_list = detection.get('bbox', [])
+                    if bbox_list and len(bbox_list) == 4:
+                        bbox_dict = {
+                            'x': bbox_list[0],
+                            'y': bbox_list[1],
+                            'x2': bbox_list[2],
+                            'y2': bbox_list[3],
+                            'width': bbox_list[2] - bbox_list[0],
+                            'height': bbox_list[3] - bbox_list[1],
+                            'output_file': output_filename,
+                            'original_file': original_filename,
+                            'output_path': f"outputs/emergency/{output_filename}",
+                            'frame': detection.get('frame')
+                        }
+                    else:
+                        bbox_dict = {
+                            'output_file': output_filename,
+                            'original_file': original_filename,
+                            'output_path': f"outputs/emergency/{output_filename}"
+                        }
+                    
+                    event = VehicleEvent(
+                        camera_id=camera_id,
+                        track_id=f"emergency_{detection.get('class')}_{uuid.uuid4().hex[:8]}",
+                        class_=detection.get('class', 'unknown'),
+                        timestamp=current_time,
+                        bbox=bbox_dict,
+                        confidence=detection.get('confidence', 0.0),
+                        lane_id='emergency_detection',
+                    )
+                    db.add(event)
+        elif 'detections' in results:
+            # Image processing
+            for detection in results['detections']:
+                # bbox is a list [x1, y1, x2, y2], convert to dict with metadata
+                bbox_list = detection.get('bbox', [])
+                if bbox_list and len(bbox_list) == 4:
+                    bbox_dict = {
+                        'x': bbox_list[0],
+                        'y': bbox_list[1],
+                        'x2': bbox_list[2],
+                        'y2': bbox_list[3],
+                        'width': bbox_list[2] - bbox_list[0],
+                        'height': bbox_list[3] - bbox_list[1],
+                        'output_file': output_filename,
+                        'original_file': original_filename,
+                        'output_path': f"outputs/emergency/{output_filename}"
+                    }
+                else:
+                    bbox_dict = {
+                        'output_file': output_filename,
+                        'original_file': original_filename,
+                        'output_path': f"outputs/emergency/{output_filename}"
+                    }
+                    
+                event = VehicleEvent(
+                    camera_id=camera_id,
+                    track_id=f"emergency_{detection.get('class')}_{uuid.uuid4().hex[:8]}",
+                    class_=detection.get('class', 'unknown'),
+                    timestamp=current_time,
+                    bbox=bbox_dict,
+                    confidence=detection.get('confidence', 0.0),
+                    lane_id='emergency_detection',
+                )
+                db.add(event)
+        
+        db.commit()
+        print(f"✅ Saved emergency detections to database. Output file: {output_filename}")
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Error saving emergency detections to database: {e}")
+
+
+
 @router.post("/detect")
-async def detect_emergency(file: UploadFile = File(...)) -> Dict:
+async def detect_emergency(file: UploadFile = File(...), db: Session = Depends(get_db)) -> Dict:
     """
     Process uploaded video or image for emergency vehicle detection
     
     Args:
         file: Uploaded video or image file
+        db: Database session
         
     Returns:
         Detection results with statistics
@@ -83,6 +174,9 @@ async def detect_emergency(file: UploadFile = File(...)) -> Dict:
             # Process video
             results = det.process_video(temp_input_path, output_path)
             
+            # Save detections to database
+            _save_emergency_detections_to_db(db, results, output_filename, file.filename)
+            
             # Return video URL and statistics
             return {
                 'success': True,
@@ -100,6 +194,9 @@ async def detect_emergency(file: UploadFile = File(...)) -> Dict:
         else:
             # Process image
             results = det.process_image(temp_input_path, output_path)
+            
+            # Save detections to database
+            _save_emergency_detections_to_db(db, results, output_filename, file.filename)
             
             # Read processed image and encode to base64
             with open(output_path, 'rb') as f:

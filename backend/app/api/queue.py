@@ -1,8 +1,9 @@
 """Queue Detection API Endpoints"""
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
 from pathlib import Path
 import tempfile
 import shutil
@@ -10,8 +11,11 @@ from typing import Dict
 import os
 import base64
 import uuid
+from datetime import datetime
 
 from app.services.queue_detector import VehicleQueueDetector
+from app.database import get_db
+from app.models.vehicle_event import VehicleEvent
 
 router = APIRouter(prefix="/queue", tags=["queue"])
 
@@ -31,8 +35,48 @@ def get_detector():
     return detector
 
 
+def _save_queue_detections_to_db(db: Session, results: Dict, output_filename: str):
+    """Save queue detection results to database"""
+    try:
+        camera_id = f"queue_upload_{uuid.uuid4().hex[:8]}"
+        current_time = datetime.utcnow()
+        
+        # Extract statistics from nested structure
+        statistics = results.get('statistics', {})
+        
+        # Metadata to include file references
+        metadata = {
+            'output_file': output_filename,
+            'output_path': f"outputs/queue/{output_filename}",
+            'total_vehicles': statistics.get('totalVehicles', 0),
+            'avg_wait_time': statistics.get('avgWaitTime', 0)
+        }
+        
+        # Save vehicle queue data if available
+        vehicle_details = statistics.get('vehicleDetails', [])
+        if vehicle_details:
+            for vehicle in vehicle_details:
+                event = VehicleEvent(
+                    camera_id=camera_id,
+                    track_id=f"queue_{vehicle.get('id', uuid.uuid4().hex[:8])}",
+                    class_=vehicle.get('type', 'vehicle'),
+                    timestamp=current_time,
+                    dwell_seconds=float(vehicle.get('queueTime', 0)),
+                    lane_id='queue_detection',
+                    confidence=0.9,
+                    bbox=metadata,
+                )
+                db.add(event)
+        
+        db.commit()
+        print(f"✅ Saved queue detections to database. Output file: {output_filename}")
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Error saving queue detections to database: {e}")
+
+
 @router.post("/detect")
-async def detect_queue(file: UploadFile = File(...)) -> Dict:
+async def detect_queue(file: UploadFile = File(...), db: Session = Depends(get_db)) -> Dict:
     """
     Process uploaded video or image for queue detection
     
@@ -86,21 +130,28 @@ async def detect_queue(file: UploadFile = File(...)) -> Dict:
                     str(output_path)
                 )
             
+            # Save results to database
+            _save_queue_detections_to_db(db, result, output_filename)
+            
+            # Prepare response in format expected by frontend
+            response = {
+                'statistics': result.get('statistics', {}),
+                'processing_time': result.get('processing_time', 0),
+                'is_video': is_video,
+            }
+            
             # For videos, use file URL; for images, use base64
             if is_video:
-                # Just return the file path for videos (too large for base64)
-                result['output_file'] = output_filename
-                result['output_path'] = f"/api/v1/queue/outputs/{output_filename}"
-                result['is_video'] = True
+                response['output_file'] = output_filename
+                response['output_path'] = f"/api/v1/queue/outputs/{output_filename}"
             else:
                 # For images, encode as base64
                 with open(output_path, 'rb') as f:
                     file_data = f.read()
                     base64_data = base64.b64encode(file_data).decode('utf-8')
-                result['output_base64'] = base64_data
-                result['is_video'] = False
+                response['output_base64'] = base64_data
             
-            return result
+            return response
             
         except Exception as e:
             raise HTTPException(
