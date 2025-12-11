@@ -36,7 +36,6 @@ const navItems = [
   { id: 'emergency', label: 'Emergency', icon: AlertTriangle, path: '/emergency' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
   { id: 'reports', label: 'Reports', icon: FileText, path: '/reports' },
-  { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCameraSelect }) => {
@@ -52,9 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
       )}>
         {open && (
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-green-500 flex items-center justify-center">
-              <span className="text-white font-bold text-sm font-mono">VFA</span>
-            </div>
+            <img src="/image.png" alt="VFA Logo" className="w-10 h-10 rounded-lg object-cover" />
             <div>
               <div className="text-sm font-bold leading-none mb-1 font-mono">VFA</div>
               <div className="text-xs text-green-400 leading-none font-mono">VEHICLE FLOW</div>
