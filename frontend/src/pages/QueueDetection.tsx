@@ -20,7 +20,6 @@ import {
   VideoLibrary,
   Image as ImageIcon,
   PlayArrow,
-  Stop,
   Delete,
   Download,
   Timeline,
@@ -211,13 +210,15 @@ const QueueDetection: React.FC = () => {
       <Box
         sx={{
           flexGrow: 1,
-          marginLeft: { xs: 0, md: sidebarOpen ? '280px' : '64px' },
-          transition: 'margin-left 0.2s ease-in-out',
+          ml: { xs: 0, md: sidebarOpen ? '280px' : '64px' },
+          transition: 'margin-left 0.3s ease-in-out',
           minHeight: '100vh',
           bgcolor: '#0a0a0a',
-          p: { xs: 2, sm: 3, md: 4 },
+          display: 'flex',
+          justifyContent: 'center',
         }}
       >
+        <Box sx={{ maxWidth: 1400, width: '100%', p: { xs: 2, sm: 3, md: 4 } }}>
         {/* Mobile Menu Button */}
         <IconButton
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -685,6 +686,7 @@ const QueueDetection: React.FC = () => {
             </Grid>
           )}
         </Grid>
+        </Box>
       </Box>
     </Box>
   );

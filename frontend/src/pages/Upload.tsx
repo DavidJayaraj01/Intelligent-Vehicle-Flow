@@ -227,12 +227,15 @@ const Upload: React.FC = () => {
       <Box
         sx={{
           flexGrow: 1,
-          marginLeft: { xs: 0, md: sidebarOpen ? '280px' : '64px' },
-          transition: 'margin-left 0.3s',
+          ml: { xs: 0, md: sidebarOpen ? '280px' : '64px' },
+          transition: 'margin-left 0.3s ease-in-out',
           bgcolor: '#000000',
           minHeight: '100vh',
+          display: 'flex',
+          justifyContent: 'center',
         }}
       >
+        <Box sx={{ maxWidth: 1400, width: '100%', px: { xs: 2, sm: 3, md: 4 } }}>
         {/* Mobile Menu Button */}
         <IconButton
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -848,6 +851,7 @@ const Upload: React.FC = () => {
             </Box>
           )}
         </Layout>
+        </Box>
       </Box>
     </Box>
   );

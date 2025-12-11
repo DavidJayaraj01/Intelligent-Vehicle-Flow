@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 
 
 class VehicleEventBase(BaseModel):
@@ -13,7 +13,7 @@ class VehicleEventBase(BaseModel):
     exit_time: Optional[datetime] = Field(None, description="Time vehicle exited frame")
     dwell_seconds: Optional[float] = Field(None, description="Time spent in frame (seconds)")
     lane_id: Optional[str] = Field(None, description="Lane identifier")
-    bbox: Optional[Dict[str, float]] = Field(None, description="Bounding box {x, y, width, height}")
+    bbox: Optional[Dict[str, Union[float, int, str]]] = Field(None, description="Bounding box coordinates and metadata")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Detection confidence score")
     
     class Config:

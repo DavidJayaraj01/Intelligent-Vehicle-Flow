@@ -136,11 +136,6 @@ const Dashboard: React.FC = () => {
     };
   }, [selectedCamera]);
 
-  const handleRefresh = () => {
-    setLoading(true);
-    fetchData();
-  };
-
   const getCameraName = (cameraId: string) => {
     const cameraNames: Record<string, string> = {
       cam01: 'Main Intersection North',
@@ -165,14 +160,16 @@ const Dashboard: React.FC = () => {
       <Box
         sx={{
           flexGrow: 1,
-          marginLeft: { xs: 0, md: sidebarOpen ? '280px' : '64px' },
-          transition: 'margin-left 0.2s ease-in-out',
+          ml: { xs: 0, md: sidebarOpen ? '280px' : '64px' },
+          transition: 'margin-left 0.3s ease-in-out',
           bgcolor: '#0a0a0a',
           minHeight: '100vh',
-          p: { xs: 2, sm: 3, md: 4, lg: 5 },
-          pt: { xs: 2, sm: 3, md: 4 },
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
         }}
       >
+        <Box sx={{ width: '100%', maxWidth: 1600, p: { xs: 2, sm: 3, md: 4, lg: 5 }, pt: { xs: 2, sm: 3, md: 4 } }}>
         {/* Mobile Menu Button */}
         <IconButton
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -245,6 +242,7 @@ const Dashboard: React.FC = () => {
 
         {/* Action Recommendation Modal */}
         <ActionModal open={modalOpen} onClose={() => setModalOpen(false)} recommendation={recommendation} />
+        </Box>
       </Box>
     </Box>
   );

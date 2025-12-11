@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import {
   Box,
-  Paper,
   Typography,
   Button,
   Grid,
@@ -9,9 +8,8 @@ import {
   CardContent,
   LinearProgress,
   Alert,
-  IconButton,
-  Divider,
   Chip,
+  IconButton,
 } from '@mui/material';
 import Sidebar from '../components/Sidebar';
 import {
@@ -19,7 +17,6 @@ import {
   VideoLibrary,
   Image as ImageIcon,
   Delete,
-  Download,
   LocalHospital,
   Warning,
   Menu as MenuIcon,
@@ -61,7 +58,7 @@ const EmergencyDetection: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<DetectionResult | null>(null);
   const [error, setError] = useState<string>('');
-  const [uploadProgress, setUploadProgress] = useState(0);
+  // const [uploadProgress, setUploadProgress] = useState(0);  // Unused - LinearProgress is indeterminate
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedCamera, setSelectedCamera] = useState<string>('cam01');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -101,7 +98,7 @@ const EmergencyDetection: React.FC = () => {
     setPreviewUrl('');
     setResult(null);
     setError('');
-    setUploadProgress(0);
+    // setUploadProgress(0);  // Unused
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -112,7 +109,7 @@ const EmergencyDetection: React.FC = () => {
 
     setIsProcessing(true);
     setError('');
-    setUploadProgress(0);
+    // setUploadProgress(0);  // Unused
 
     try {
       const formData = new FormData();
@@ -153,7 +150,7 @@ const EmergencyDetection: React.FC = () => {
         setResult(data);
       }
 
-      setUploadProgress(100);
+      // setUploadProgress(100);  // Unused
     } catch (err) {
       console.error('Emergency detection error:', err);
       setError(err instanceof Error ? err.message : 'Failed to process file');
@@ -200,11 +197,15 @@ const EmergencyDetection: React.FC = () => {
       <Box 
         sx={{ 
           flexGrow: 1,
-          marginLeft: { xs: 0, md: sidebarOpen ? '280px' : '64px' },
-          transition: 'margin-left 0.2s ease-in-out',
-          p: { xs: 2, sm: 3, md: 4 },
+          ml: { xs: 0, md: sidebarOpen ? '280px' : '64px' },
+          transition: 'margin-left 0.3s ease-in-out',
+          minHeight: '100vh',
+          bgcolor: '#0a0a0a',
+          display: 'flex',
+          justifyContent: 'center',
         }}
       >
+        <Box sx={{ maxWidth: 1400, width: '100%', p: { xs: 2, sm: 3, md: 4 } }}>
         {/* Mobile Menu Button */}
         <IconButton
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -577,6 +578,7 @@ const EmergencyDetection: React.FC = () => {
             </Card>
           </Grid>
         </Grid>
+        </Box>
       </Box>
     </Box>
   );
