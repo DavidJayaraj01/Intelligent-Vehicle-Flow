@@ -7,7 +7,6 @@ import RealtimeChart from './RealtimeChart';
 import EventTable from './EventTable';
 import ReplayPanel from './ReplayPanel';
 import ActionModal from './ActionModal';
-import Layout from './Layout';
 import Sidebar from './Sidebar';
 import CameraFeed from './CameraFeed';
 
@@ -163,70 +162,71 @@ const Dashboard: React.FC = () => {
 
       {/* Main Content */}
       <Box
-        component="main"
         sx={{
           flexGrow: 1,
-          marginLeft: sidebarOpen ? '200px' : '64px',
+          marginLeft: sidebarOpen ? '280px' : '64px',
           transition: 'margin-left 0.2s ease-in-out',
           bgcolor: '#0a0a0a',
           minHeight: '100vh',
+          display: 'flex',
+          justifyContent: 'center',
         }}
       >
-        <Layout onRefresh={handleRefresh}>
-          {/* Error Alert */}
-          {error && (
-            <Alert 
-              severity="error" 
-              sx={{ 
-                mb: 4,
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '12px',
-                color: '#ffffff',
-                '& .MuiAlert-icon': {
-                  color: '#ef4444'
-                }
-              }}
-              onClose={() => setError(null)}
-            >
-              {error}
-            </Alert>
-          )}
+        <Box sx={{ maxWidth: 1600, width: '100%', p: { xs: 2, sm: 3, md: 5 }, pt: 4 }}>
+        {/* Error Alert */}
+        {error && (
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 4,
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '12px',
+              color: '#ffffff',
+              '& .MuiAlert-icon': {
+                color: '#ef4444'
+              }
+            }}
+            onClose={() => setError(null)}
+          >
+            {error}
+          </Alert>
+        )}
 
-          {/* Camera Feed */}
-          <Box sx={{ mb: 6 }}>
-            <CameraFeed
-              cameraId={selectedCamera}
-              cameraName={getCameraName(selectedCamera)}
-              detections={detections}
-            />
-          </Box>
+        {/* Camera Feed */}
+        <Box sx={{ mb: 6 }}>
+          <CameraFeed
+            cameraId={selectedCamera}
+            cameraName={getCameraName(selectedCamera)}
+            detections={detections}
+          />
+        </Box>
 
-          {/* KPI Tiles */}
-          <Box sx={{ mb: 6 }}>
-            <KPITiles
-              totalEvents={metrics.total_events}
-              avgDwellTime={metrics.avg_dwell_time}
-              queueLength={metrics.queue_length}
-            />
-          </Box>
+        {/* KPI Tiles */}
+        <Box sx={{ mb: 6 }}>
+          <KPITiles
+            totalEvents={metrics.total_events}
+            avgDwellTime={metrics.avg_dwell_time}
+            queueLength={metrics.queue_length}
+          />
+        </Box>
 
-          {/* Chart and Replay Panel */}
-          <Grid container spacing={4} sx={{ mb: 6 }}>
-            <Grid size={{ xs: 12, lg: 8 }}>
-              <RealtimeChart data={chartData} />
-            </Grid>
-            <Grid size={{ xs: 12, lg: 4 }}>
-              <ReplayPanel />
-            </Grid>
+        {/* Chart and Replay Panel */}
+        <Grid container spacing={4} sx={{ mb: 6 }}>
+          <Grid size={{ xs: 12, lg: 8 }}>
+            <RealtimeChart data={chartData} />
           </Grid>
+          <Grid size={{ xs: 12, lg: 4 }}>
+            <ReplayPanel />
+          </Grid>
+        </Grid>
 
-          {/* Events Table */}
-          <EventTable events={events} loading={loading} />
+        {/* Events Table */}
+        <EventTable events={events} loading={loading} />
 
-          {/* Action Recommendation Modal */}
-          <ActionModal open={modalOpen} onClose={() => setModalOpen(false)} recommendation={recommendation} />
-        </Layout>
+        {/* Action Recommendation Modal */}
+        <ActionModal open={modalOpen} onClose={() => setModalOpen(false)} recommendation={recommendation} />
+        </Box>
       </Box>
     </Box>
   );

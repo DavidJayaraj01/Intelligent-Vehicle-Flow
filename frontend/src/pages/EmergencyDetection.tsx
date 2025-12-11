@@ -61,6 +61,8 @@ const EmergencyDetection: React.FC = () => {
   const [result, setResult] = useState<DetectionResult | null>(null);
   const [error, setError] = useState<string>('');
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedCamera, setSelectedCamera] = useState<string>('cam01');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -187,82 +189,85 @@ const EmergencyDetection: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0a0e1a' }}>
-      <Sidebar />
+      <Sidebar
+        open={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        selectedCamera={selectedCamera}
+        onCameraSelect={setSelectedCamera}
+      />
       
-      <Box component="main" sx={{ flexGrow: 1, p: 4 }}>
+      <Box 
+        sx={{ 
+          flexGrow: 1,
+          marginLeft: sidebarOpen ? '280px' : '64px',
+          transition: 'margin-left 0.2s ease-in-out',
+          display: 'flex',
+          justifyContent: 'center',
+        }}
+      >
+        <Box sx={{ maxWidth: 1400, width: '100%', p: { xs: 2, sm: 3, md: 4 } }}>
         {/* Header */}
-        <Box sx={{ mb: 5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
-            <Box 
-              sx={{ 
-                width: 56, 
-                height: 56, 
-                borderRadius: 2,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                boxShadow: '0 8px 16px rgba(239, 68, 68, 0.3)',
-              }}
-            >
-              <LocalHospital sx={{ fontSize: 32, color: '#fff' }} />
-            </Box>
-            <Box>
-              <Typography
-                variant="h3"
-                sx={{
-                  fontWeight: 800,
-                  background: 'linear-gradient(135deg, #ef4444 0%, #f97316 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  letterSpacing: '-0.5px',
-                }}
-              >
-                Emergency Vehicle Detection
-              </Typography>
-              <Typography variant="body1" sx={{ color: '#94a3b8', mt: 0.5 }}>
-                AI-powered detection of ambulances, fire trucks, and police cars in real-time
-              </Typography>
-            </Box>
-          </Box>
-          <Divider sx={{ borderColor: '#1e293b', mt: 3 }} />
+        <Box sx={{ mb: 8 }}>
+          <Typography
+            variant="h2"
+            sx={{
+              fontWeight: 900,
+              fontSize: { xs: '2.2rem', sm: '2.8rem', md: '3.8rem' },
+              color: '#ffffff',
+              mb: 2.5,
+              letterSpacing: '-1px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <LocalHospital sx={{ color: '#ef4444', fontSize: { xs: '2rem', md: '3rem' } }} />
+            Emergency Detection
+          </Typography>
+          <Typography 
+            variant="h5"
+            sx={{ 
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontWeight: 400,
+              fontSize: { xs: '1.05rem', md: '1.25rem' },
+              maxWidth: '700px',
+              lineHeight: 1.6,
+            }}
+          >
+            AI-powered detection of ambulances, fire trucks, and police cars in real-time
+          </Typography>
         </Box>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={5}>
           {/* Upload Section */}
-          <Grid item xs={12} md={6}>
-            <Card 
-              sx={{ 
-                bgcolor: '#1e293b', 
-                borderRadius: 3, 
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <Card
+              elevation={0}
+              sx={{
+                borderRadius: '20px',
+                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
+                backdropFilter: 'blur(16px)',
+                border: '1px solid rgba(239, 68, 68, 0.15)',
                 height: '100%',
-                border: '1px solid #334155',
-                transition: 'all 0.3s',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                transition: 'all 0.3s ease',
                 '&:hover': {
-                  borderColor: '#475569',
-                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
-                }
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  boxShadow: '0 12px 48px rgba(239, 68, 68, 0.15)',
+                },
               }}
             >
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 1.5 }}>
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 1.5,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      bgcolor: 'rgba(239, 68, 68, 0.1)',
-                    }}
-                  >
-                    <CloudUpload sx={{ color: '#ef4444', fontSize: 24 }} />
-                  </Box>
-                  <Typography variant="h5" sx={{ color: '#f1f5f9', fontWeight: 700 }}>
-                    Upload Media
-                  </Typography>
-                </Box>
+              <CardContent sx={{ p: 4 }}>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 700, mb: 0.5, color: '#ffffff', display: 'flex', alignItems: 'center', gap: 1.5 }}
+                >
+                  <CloudUpload sx={{ fontSize: 32 }} />
+                  Upload Media
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', display: 'block', mb: 4 }}>
+                  MP4, AVI, MOV, JPG, PNG
+                </Typography>
 
                 <input
                   ref={fileInputRef}
@@ -383,15 +388,34 @@ const EmergencyDetection: React.FC = () => {
           </Grid>
 
           {/* Results Section */}
-          <Grid item xs={12} md={6}>
-            <Card sx={{ bgcolor: '#1e293b', borderRadius: 2, height: '100%' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Warning sx={{ color: '#f59e0b', mr: 1 }} />
-                  <Typography variant="h6" sx={{ color: '#f1f5f9', fontWeight: 600 }}>
-                    Detection Results
-                  </Typography>
-                </Box>
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <Card
+              elevation={0}
+              sx={{
+                borderRadius: '20px',
+                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
+                backdropFilter: 'blur(16px)',
+                border: '1px solid rgba(239, 68, 68, 0.15)',
+                height: '100%',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  boxShadow: '0 12px 48px rgba(239, 68, 68, 0.15)',
+                },
+              }}
+            >
+              <CardContent sx={{ p: 4 }}>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 700, mb: 0.5, color: '#ffffff', display: 'flex', alignItems: 'center', gap: 1.5 }}
+                >
+                  <Warning sx={{ fontSize: 32 }} />
+                  Detection Results
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', display: 'block', mb: 4 }}>
+                  Emergency vehicle analysis
+                </Typography>
 
                 {!result ? (
                   <Box
@@ -428,8 +452,9 @@ const EmergencyDetection: React.FC = () => {
                             />
                             <Box sx={{ p: 2, bgcolor: '#1e293b', textAlign: 'center' }}>
                               <Button
+                                component="a"
                                 variant="contained"
-                                href={result.videoUrl}
+                                href={result.videoUrl || '#'}
                                 target="_blank"
                                 download="emergency_detection_result.mp4"
                                 sx={{
@@ -458,7 +483,7 @@ const EmergencyDetection: React.FC = () => {
                       </Typography>
                       
                       <Grid container spacing={2}>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                           <Card sx={{ bgcolor: '#0f172a', p: 2, textAlign: 'center' }}>
                             <Typography variant="h3" sx={{ color: '#ef4444', fontWeight: 700 }}>
                               {result.statistics.totalDetections}
@@ -468,7 +493,7 @@ const EmergencyDetection: React.FC = () => {
                             </Typography>
                           </Card>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                           <Card sx={{ bgcolor: '#0f172a', p: 2, textAlign: 'center' }}>
                             <Typography variant="h3" sx={{ color: '#10b981', fontWeight: 700 }}>
                               {result.processingTime}s
@@ -534,6 +559,7 @@ const EmergencyDetection: React.FC = () => {
             </Card>
           </Grid>
         </Grid>
+        </Box>
       </Box>
     </Box>
   );

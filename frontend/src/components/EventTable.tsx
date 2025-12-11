@@ -81,41 +81,61 @@ const EventTable: React.FC<EventTableProps> = ({ events, loading = false }) => {
 
   return (
     <Card 
+      className="glass-card fade-in"
       sx={{
-        background: 'rgba(255, 255, 255, 0.03)',
-        backdropFilter: 'none',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: '16px',
-        boxShadow: 'none',
+        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.03) 100%)',
+        backdropFilter: 'blur(16px)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: '20px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        '&:hover': {
+          borderColor: 'rgba(59, 130, 246, 0.3)',
+          boxShadow: '0 12px 48px rgba(0, 0, 0, 0.4)',
+        }
       }}
     >
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography 
-            variant="h6"
-            sx={{ 
-              fontWeight: 700,
-              color: '#ffffff'
-            }}
-          >
-            Recent Events
-          </Typography>
+      <CardContent sx={{ p: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+          <Box>
+            <Typography 
+              variant="h5"
+              sx={{ 
+                fontWeight: 800,
+                color: '#ffffff',
+                mb: 0.5,
+              }}
+            >
+              Recent Events
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+              {filteredEvents.length} total events
+            </Typography>
+          </Box>
           <Button
             variant="contained"
             startIcon={<Download />}
             onClick={handleExport}
             disabled={filteredEvents.length === 0}
             sx={{
-              bgcolor: '#ffffff',
-              color: '#000000',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+              color: '#ffffff',
               textTransform: 'none',
-              fontWeight: 600,
+              fontWeight: 700,
+              px: 3,
+              py: 1.5,
+              borderRadius: '12px',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
+              transition: 'all 0.3s',
               '&:hover': {
-                bgcolor: 'rgba(255, 255, 255, 0.9)',
+                background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+                boxShadow: '0 6px 16px rgba(59, 130, 246, 0.6)',
+                transform: 'translateY(-2px)',
               },
               '&:disabled': {
-                bgcolor: 'rgba(255, 255, 255, 0.1)',
-                color: 'rgba(255, 255, 255, 0.3)'
+                background: 'rgba(255, 255, 255, 0.05)',
+                color: 'rgba(255, 255, 255, 0.3)',
+                boxShadow: 'none',
               }
             }}
           >
@@ -124,20 +144,26 @@ const EventTable: React.FC<EventTableProps> = ({ events, loading = false }) => {
         </Box>
 
         {/* Filters */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>Camera</InputLabel>
+        <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>
+          <FormControl size="small" sx={{ minWidth: 170 }}>
+            <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.6)', fontWeight: 600 }}>Camera</InputLabel>
             <Select 
               value={cameraFilter} 
               onChange={(e) => setCameraFilter(e.target.value)} 
               label="Camera"
               sx={{
                 color: '#ffffff',
+                bgcolor: 'rgba(255, 255, 255, 0.03)',
+                borderRadius: '12px',
+                fontWeight: 600,
                 '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(255, 255, 255, 0.08)',
+                  borderColor: 'rgba(255, 255, 255, 0.15)',
                 },
                 '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                  borderColor: 'rgba(59, 130, 246, 0.4)',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#3b82f6',
                 },
               }}
             >
@@ -227,13 +253,18 @@ const EventTable: React.FC<EventTableProps> = ({ events, loading = false }) => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredEvents.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((event) => (
+                filteredEvents.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((event, idx) => (
                   <TableRow 
                     key={event.id}
+                    className="fade-in"
                     sx={{
                       borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                      transition: 'all 0.2s',
+                      animation: `fadeIn 0.3s ease-out ${idx * 0.05}s backwards`,
                       '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                        transform: 'scale(1.01)',
+                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.15)',
                       }
                     }}
                   >

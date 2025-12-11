@@ -54,6 +54,8 @@ const QueueDetection: React.FC = () => {
   const [result, setResult] = useState<DetectionResult | null>(null);
   const [error, setError] = useState<string>('');
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedCamera, setSelectedCamera] = useState<string>('cam01');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -198,56 +200,87 @@ const QueueDetection: React.FC = () => {
   const isVideo = selectedFile?.type.startsWith('video/');
 
   return (
-    <>
-      <Sidebar />
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0a0a0a' }}>
+      <Sidebar
+        open={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        selectedCamera={selectedCamera}
+        onCameraSelect={setSelectedCamera}
+      />
       <Box
         sx={{
-          marginLeft: '200px',
-          transition: 'margin-left 0.3s',
+          flexGrow: 1,
+          marginLeft: sidebarOpen ? '280px' : '64px',
+          transition: 'margin-left 0.2s ease-in-out',
           minHeight: '100vh',
           bgcolor: '#0a0a0a',
-          p: 3,
+          display: 'flex',
+          justifyContent: 'center',
         }}
       >
-        <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
+        <Box sx={{ maxWidth: 1400, width: '100%', p: { xs: 2, sm: 3, md: 4 } }}>
         {/* Header */}
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 8 }}>
           <Typography
-            variant="h4"
+            variant="h2"
             sx={{
-              fontWeight: 600,
-              color: 'white',
-              mb: 1,
+              fontWeight: 900,
+              fontSize: { xs: '2.2rem', sm: '2.8rem', md: '3.8rem' },
+              color: '#ffffff',
+              mb: 2.5,
+              letterSpacing: '-1px',
               display: 'flex',
               alignItems: 'center',
-              gap: 1,
+              gap: 2,
             }}
           >
-            <Timeline sx={{ color: '#0ea5e9' }} />
-            Queue Detection System
+            <Timeline sx={{ color: '#3b82f6', fontSize: { xs: '2rem', md: '3rem' } }} />
+            Queue Detection
           </Typography>
-          <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+          <Typography 
+            variant="h5"
+            sx={{ 
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontWeight: 400,
+              fontSize: { xs: '1.05rem', md: '1.25rem' },
+              maxWidth: '700px',
+              lineHeight: 1.6,
+            }}
+          >
             Upload video or image to detect vehicles and calculate queue waiting times using YOLOv8
           </Typography>
         </Box>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={5}>
           {/* Upload Section */}
-          <Grid item xs={12} md={6}>
-            <Paper
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <Card
+              elevation={0}
               sx={{
-                p: 3,
-                bgcolor: '#1e293b',
-                border: '1px solid rgba(14, 165, 233, 0.3)',
+                borderRadius: '20px',
+                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
+                backdropFilter: 'blur(16px)',
+                border: '1px solid rgba(14, 165, 233, 0.15)',
+                height: '100%',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  border: '1px solid rgba(14, 165, 233, 0.3)',
+                  boxShadow: '0 12px 48px rgba(14, 165, 233, 0.15)',
+                },
               }}
             >
-              <Typography
-                variant="h6"
-                sx={{ color: 'white', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
-              >
-                <CloudUpload />
-                Upload Media
-              </Typography>
+              <CardContent sx={{ p: 4 }}>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 700, mb: 0.5, color: '#ffffff', display: 'flex', alignItems: 'center', gap: 1.5 }}
+                >
+                  <CloudUpload sx={{ fontSize: 32 }} />
+                  Upload Media
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', display: 'block', mb: 4 }}>
+                  MP4, AVI, MOV, JPG, PNG
+                </Typography>
 
               <input
                 ref={fileInputRef}
@@ -378,26 +411,39 @@ const QueueDetection: React.FC = () => {
                   {error}
                 </Alert>
               )}
-            </Paper>
-          </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
 
           {/* Results Section */}
-          <Grid item xs={12} md={6}>
-            <Paper
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <Card
+              elevation={0}
               sx={{
-                p: 3,
-                bgcolor: '#1e293b',
-                border: '1px solid rgba(14, 165, 233, 0.3)',
-                minHeight: 500,
+                borderRadius: '20px',
+                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)',
+                backdropFilter: 'blur(16px)',
+                border: '1px solid rgba(14, 165, 233, 0.15)',
+                height: '100%',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  border: '1px solid rgba(14, 165, 233, 0.3)',
+                  boxShadow: '0 12px 48px rgba(14, 165, 233, 0.15)',
+                },
               }}
             >
-              <Typography
-                variant="h6"
-                sx={{ color: 'white', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
-              >
-                <Timeline />
-                Detection Results
-              </Typography>
+              <CardContent sx={{ p: 4 }}>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 700, mb: 0.5, color: '#ffffff', display: 'flex', alignItems: 'center', gap: 1.5 }}
+                >
+                  <Timeline sx={{ fontSize: 32 }} />
+                  Detection Results
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', display: 'block', mb: 4 }}>
+                  Processed queue analysis
+                </Typography>
 
               {result ? (
                 <Box>
@@ -452,7 +498,7 @@ const QueueDetection: React.FC = () => {
 
                   {/* Statistics Cards */}
                   <Grid container spacing={2} sx={{ mb: 3 }}>
-                    <Grid item xs={6}>
+                    <Grid size={{ xs: 6 }}>
                       <Card sx={{ bgcolor: '#0f172a', p: 2 }}>
                         <Typography variant="caption" sx={{ color: '#94a3b8' }}>
                           Total Vehicles
@@ -462,7 +508,7 @@ const QueueDetection: React.FC = () => {
                         </Typography>
                       </Card>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={{ xs: 6 }}>
                       <Card sx={{ bgcolor: '#0f172a', p: 2 }}>
                         <Typography variant="caption" sx={{ color: '#94a3b8' }}>
                           In Queue
@@ -472,7 +518,7 @@ const QueueDetection: React.FC = () => {
                         </Typography>
                       </Card>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={{ xs: 6 }}>
                       <Card sx={{ bgcolor: '#0f172a', p: 2 }}>
                         <Typography variant="caption" sx={{ color: '#94a3b8' }}>
                           Completed
@@ -482,7 +528,7 @@ const QueueDetection: React.FC = () => {
                         </Typography>
                       </Card>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={{ xs: 6 }}>
                       <Card sx={{ bgcolor: '#0f172a', p: 2 }}>
                         <Typography variant="caption" sx={{ color: '#94a3b8' }}>
                           Avg Wait Time
@@ -557,12 +603,13 @@ const QueueDetection: React.FC = () => {
                   </Typography>
                 </Box>
               )}
-            </Paper>
-          </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
 
           {/* Vehicle Details Table */}
           {result && result.statistics.vehicleDetails.length > 0 && (
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Paper
                 sx={{
                   p: 3,
@@ -622,7 +669,7 @@ const QueueDetection: React.FC = () => {
         </Grid>
         </Box>
       </Box>
-    </>
+    </Box>
   );
 };
 
