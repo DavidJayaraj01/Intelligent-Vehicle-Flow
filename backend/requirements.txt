@@ -27,3 +27,8 @@ seaborn==0.13.0
 thop==0.1.1-2209072238
 ensemble-boxes==1.0.9
 ultralytics==8.0.196
+ultralytics>=8.0.0
+opencv-python>=4.8.0
+torch>=2.0.0
+torchvision>=0.15.0
+numpy>=1.24.0
