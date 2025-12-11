@@ -16,7 +16,6 @@ import {
 import { Button } from '@/components/ui/button';
 import Sidebar from '../components/Sidebar';
 import { cn } from '@/lib/utils';
-import { apiUrl } from '@/lib/api';
 
 interface Detection {
   bbox: [number, number, number, number];
