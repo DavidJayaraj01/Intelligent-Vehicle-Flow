@@ -21,6 +21,8 @@ import {
   ChevronLeft,
   ChevronRight,
   CloudUpload,
+  QueuePlayNext,
+  LocalHospital,
 } from '@mui/icons-material';
 
 interface SidebarProps {
@@ -40,6 +42,8 @@ const cameras = [
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, path: '/dashboard' },
   { id: 'upload', label: 'Upload', icon: CloudUpload, path: '/upload' },
+  { id: 'queue-detection', label: 'Queue Detection', icon: QueuePlayNext, path: '/queue-detection' },
+  { id: 'emergency', label: 'Emergency', icon: LocalHospital, path: '/emergency' },
   { id: 'analytics', label: 'Analytics', icon: Timeline, path: '/analytics' },
   { id: 'reports', label: 'Reports', icon: Assessment, path: '/reports' },
   { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },

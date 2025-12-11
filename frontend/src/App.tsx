@@ -3,6 +3,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Dashboard from './components/Dashboard';
 import Upload from './pages/Upload';
+import QueueDetection from './pages/QueueDetection';
 
 const theme = createTheme({
   palette: {
@@ -80,6 +81,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/upload" element={<Upload />} />
+          <Route path="/queue-detection" element={<QueueDetection />} />
         </Routes>
       </Router>
     </ThemeProvider>
