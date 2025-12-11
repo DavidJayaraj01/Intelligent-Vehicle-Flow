@@ -55,27 +55,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
   const navigate = useNavigate();
   const location = useLocation();
 
-  return (
-    <Drawer
-      variant="permanent"
-      sx={{
-        width: open ? drawerWidth : collapsedWidth,
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: open ? drawerWidth : collapsedWidth,
-          boxSizing: 'border-box',
-          transition: 'width 0.2s ease-in-out',
-          backgroundColor: '#0f172a',
-          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-          color: 'white',
-          overflowX: 'hidden',
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100vh',
-        },
-      }}
-    >
+  const drawerContent = (
+    <>
       {/* Logo & Toggle */}
       <Box
         sx={{
@@ -301,7 +282,62 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
       
       {/* Spacer for collapsed state */}
       {!open && <Box sx={{ flex: 1 }} />}
-    </Drawer>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Drawer */}
+      <Drawer
+        variant="permanent"
+        sx={{
+          width: open ? drawerWidth : collapsedWidth,
+          flexShrink: 0,
+          display: { xs: 'none', md: 'block' },
+          '& .MuiDrawer-paper': {
+            width: open ? drawerWidth : collapsedWidth,
+            boxSizing: 'border-box',
+            transition: 'width 0.2s ease-in-out',
+            backgroundColor: '#0f172a',
+            borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+            color: 'white',
+            overflowX: 'hidden',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100vh',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+          },
+        }}
+      >
+        {drawerContent}
+      </Drawer>
+
+      {/* Mobile Drawer */}
+      <Drawer
+        variant="temporary"
+        open={open}
+        onClose={onToggle}
+        ModalProps={{
+          keepMounted: true, // Better open performance on mobile
+          disableScrollLock: true,
+        }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            boxSizing: 'border-box',
+            backgroundColor: '#0f172a',
+            borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+            color: 'white',
+          },
+        }}
+      >
+        {drawerContent}
+      </Drawer>
+    </>
   );
 };
 

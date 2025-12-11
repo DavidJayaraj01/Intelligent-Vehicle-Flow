@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Grid, Alert } from '@mui/material';
+import { Box, Grid, Alert, IconButton } from '@mui/material';
+import { Menu as MenuIcon } from '@mui/icons-material';
 import { getEvents, getMetrics, getMetricsTimeSeries } from '../services/api';
 import wsService from '../services/websocket';
 import KPITiles from './KPITiles';
@@ -164,15 +165,33 @@ const Dashboard: React.FC = () => {
       <Box
         sx={{
           flexGrow: 1,
-          marginLeft: sidebarOpen ? '280px' : '64px',
+          marginLeft: { xs: 0, md: sidebarOpen ? '280px' : '64px' },
           transition: 'margin-left 0.2s ease-in-out',
           bgcolor: '#0a0a0a',
           minHeight: '100vh',
-          display: 'flex',
-          justifyContent: 'center',
+          p: { xs: 2, sm: 3, md: 4, lg: 5 },
+          pt: { xs: 2, sm: 3, md: 4 },
         }}
       >
-        <Box sx={{ maxWidth: 1600, width: '100%', p: { xs: 2, sm: 3, md: 5 }, pt: 4 }}>
+        {/* Mobile Menu Button */}
+        <IconButton
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          sx={{
+            display: { xs: 'flex', md: 'none' },
+            position: 'fixed',
+            top: 16,
+            left: 16,
+            zIndex: 1200,
+            bgcolor: '#1e293b',
+            color: '#ffffff',
+            '&:hover': {
+              bgcolor: '#334155',
+            },
+          }}
+        >
+          <MenuIcon />
+        </IconButton>
+
         {/* Error Alert */}
         {error && (
           <Alert 
@@ -226,7 +245,6 @@ const Dashboard: React.FC = () => {
 
         {/* Action Recommendation Modal */}
         <ActionModal open={modalOpen} onClose={() => setModalOpen(false)} recommendation={recommendation} />
-        </Box>
       </Box>
     </Box>
   );
