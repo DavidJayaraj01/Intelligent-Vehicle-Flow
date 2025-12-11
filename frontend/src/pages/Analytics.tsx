@@ -5,7 +5,6 @@ import {
   Users,
   Activity,
   RefreshCw,
-  BarChart3,
   Info,
   AlertTriangle,
   Ambulance,
@@ -31,14 +30,18 @@ interface BusinessInsight {
 const Analytics: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedCamera, setSelectedCamera] = useState<string>('cam01');
+  const [loading, setLoading] = useState(false);
 
+  // Sample data - replace with real API calls
   const peakHourData = [
     { time: '06:00', vehicles: 45 },
     { time: '07:00', vehicles: 120 },
     { time: '08:00', vehicles: 280 },
     { time: '09:00', vehicles: 190 },
     { time: '10:00', vehicles: 140 },
+    { time: '11:00', vehicles: 110 },
     { time: '12:00', vehicles: 150 },
+    { time: '13:00', vehicles: 130 },
     { time: '17:00', vehicles: 240 },
     { time: '18:00', vehicles: 310 },
     { time: '19:00', vehicles: 200 },
@@ -54,7 +57,7 @@ const Analytics: React.FC = () => {
   const businessInsights: BusinessInsight[] = [
     {
       title: 'Peak Hour Identification',
-      description: 'Morning and evening rush hours identified',
+      description: 'Morning and evening rush hours identified with precision',
       value: '8:00 AM & 6:00 PM',
       trend: 'stable',
       icon: <Clock className="h-5 w-5" />,
@@ -68,33 +71,141 @@ const Analytics: React.FC = () => {
     },
     {
       title: 'Queue Analysis',
-      description: 'Average wait time monitoring',
+      description: 'Average wait time and queue length monitoring',
       value: '3.2 minutes',
       trend: 'down',
       icon: <Users className="h-5 w-5" />,
       importance: 'high',
       details: [
         'Average queue length: 12 vehicles',
-        'Maximum queue: 28 vehicles at 6:15 PM',
-        'Queue clearance: 85% efficiency',
+        'Maximum queue detected: 28 vehicles at 6:15 PM',
+        'Queue clearance rate: 85% efficiency',
         'Wait time reduced by 15% from last week',
       ],
     },
     {
-      title: 'Traffic Flow Efficiency',
-      description: 'Overall system performance',
-      value: '87%',
+      title: 'Lane Performance Score',
+      description: 'Real-time scoring of each traffic lane efficiency',
+      value: '87/100',
       trend: 'up',
       icon: <Activity className="h-5 w-5" />,
       importance: 'high',
       details: [
-        'Average throughput: 1,250 vehicles/hour',
-        'System uptime: 99.8%',
-        'Processing accuracy: 94.2%',
-        'Improved by 8% this month',
+        'Lane 4 performing best: 94/100 (287 vehicles processed)',
+        'Lane 3 needs attention: 72/100 (high wait times)',
+        'Overall throughput: 875 vehicles/hour',
+        'Lane utilization: 78% average',
+      ],
+    },
+    {
+      title: 'Congestion Hotspots',
+      description: 'AI-detected areas prone to traffic buildup',
+      value: '3 locations',
+      trend: 'stable',
+      icon: <MapPin className="h-5 w-5" />,
+      importance: 'critical',
+      details: [
+        'Junction A: High congestion 8-9 AM',
+        'Merge Point B: Bottleneck during rush hours',
+        'Exit Ramp C: Queue spillback detected',
+        'Suggested: Traffic signal timing adjustment',
+      ],
+    },
+    {
+      title: 'Emergency Response Efficiency',
+      description: 'Average time for emergency vehicle clearance',
+      value: '42 seconds',
+      trend: 'up',
+      icon: <Ambulance className="h-5 w-5" />,
+      importance: 'critical',
+      details: [
+        'Emergency vehicle detected: 18 instances today',
+        'Average lane clearance time: 42 seconds',
+        '95% success rate in path clearing',
+        'Fastest response: 28 seconds',
+      ],
+    },
+    {
+      title: 'Incident Risk Prediction',
+      description: 'AI-powered prediction of potential traffic incidents',
+      value: 'Medium Risk',
+      trend: 'stable',
+      icon: <AlertTriangle className="h-5 w-5" />,
+      importance: 'medium',
+      details: [
+        'Risk score: 6.2/10 (Medium)',
+        'High-risk periods: 5-7 PM',
+        'Weather impact: Low visibility tomorrow AM',
+        'Preventive deployment recommended',
+      ],
+    },
+    {
+      title: 'Traffic Forecast (Next Hour)',
+      description: 'ML-based prediction of upcoming traffic patterns',
+      value: '+25% increase',
+      trend: 'up',
+      icon: <Gauge className="h-5 w-5" />,
+      importance: 'high',
+      details: [
+        'Expected vehicles next hour: 195 (+25%)',
+        'Confidence level: 92%',
+        'Predicted queue time: 4.5 minutes',
+        'Recommendation: Pre-activate overflow lanes',
+      ],
+    },
+    {
+      title: 'Economic Impact Analysis',
+      description: 'Estimated fuel and time savings from optimized flow',
+      value: '$12,450/day',
+      trend: 'up',
+      icon: <DollarSign className="h-5 w-5" />,
+      importance: 'medium',
+      details: [
+        'Fuel savings: $8,200/day (reduced idling)',
+        'Time savings: 2,840 person-hours/day',
+        'Economic value: $4,250/day productivity gain',
+        'CO2 reduction: 1.2 tons/day',
       ],
     },
   ];
+
+  const handleRefresh = () => {
+    setLoading(true);
+    // Simulate data refresh
+    setTimeout(() => setLoading(false), 1000);
+  };
+
+  const getImportanceColor = (importance: string) => {
+    switch (importance) {
+      case 'critical':
+        return 'text-destructive';
+      case 'high':
+        return 'text-orange-500';
+      case 'medium':
+        return 'text-primary';
+      default:
+        return 'text-muted-foreground';
+    }
+  };
+
+  const getImportanceBg = (importance: string) => {
+    switch (importance) {
+      case 'critical':
+        return 'bg-destructive/10 border-destructive/20';
+      case 'high':
+        return 'bg-orange-500/10 border-orange-500/20';
+      case 'medium':
+        return 'bg-primary/10 border-primary/20';
+      default:
+        return 'bg-muted border-border';
+    }
+  };
+
+  const getTrendIcon = (trend?: string) => {
+    if (trend === 'up') return <TrendingUp className="h-4 w-4 text-green-500" />;
+    if (trend === 'down') return <TrendingUp className="h-4 w-4 text-destructive rotate-180" />;
+    return null;
+  };
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -106,182 +217,217 @@ const Analytics: React.FC = () => {
       />
 
       <div className={cn("flex-1 transition-all duration-300", sidebarOpen ? "md:ml-[280px]" : "md:ml-16")}>
-        <div className="max-w-[1600px] mx-auto p-4 sm:p-6 md:p-8 lg:p-10">
+        <div className="max-w-[1600px] mx-auto p-4 sm:p-6 md:p-8 lg:p-10 space-y-8">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-foreground font-mono">
-                Analytics
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Business Insights & Traffic Analysis
+              <div className="flex items-center gap-3 mb-2">
+                <Activity className="h-8 w-8 text-primary inline" />
+                <h1 className="text-3xl font-bold tracking-tight text-foreground font-mono inline">
+                  Business Intelligence Analytics
+                </h1>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Real-time insights converted from live traffic camera data
               </p>
             </div>
-            <Button variant="outline" size="sm" className="gap-2">
-              <RefreshCw className="h-4 w-4" />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2"
+              onClick={handleRefresh}
+              disabled={loading}
+            >
+              <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
               Refresh Data
             </Button>
           </div>
 
-          {/* Business Insights Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {businessInsights.map((insight, index) => (
-              <div
-                key={index}
-                className="animate-fade-in rounded-xl border border-border bg-card p-6 hover:border-primary/30 transition-colors"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className={cn(
-                    "p-3 rounded-lg",
-                    insight.importance === 'critical' ? "bg-destructive/10" :
-                    insight.importance === 'high' ? "bg-primary/10" :
-                    "bg-muted"
-                  )}>
-                    <div className={cn(
-                      insight.importance === 'critical' ? "text-destructive" :
-                      insight.importance === 'high' ? "text-primary" :
-                      "text-muted-foreground"
-                    )}>
-                      {insight.icon}
+          {loading && (
+            <div className="h-1 bg-border rounded-full overflow-hidden">
+              <div className="h-full w-1/3 bg-primary animate-pulse" />
+            </div>
+          )}
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
+              <div className="text-sm text-muted-foreground font-medium mb-2">
+                Total Vehicles Today
+              </div>
+              <div className="text-3xl font-mono font-bold mb-2">8,542</div>
+              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/10 text-green-500 text-xs font-medium">
+                +12% vs yesterday
+              </div>
+            </div>
+            <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
+              <div className="text-sm text-muted-foreground font-medium mb-2">
+                Avg Queue Time
+              </div>
+              <div className="text-3xl font-mono font-bold mb-2">3.2 min</div>
+              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/10 text-green-500 text-xs font-medium">
+                -8% improvement
+              </div>
+            </div>
+            <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
+              <div className="text-sm text-muted-foreground font-medium mb-2">
+                System Efficiency
+              </div>
+              <div className="text-3xl font-mono font-bold mb-2">87%</div>
+              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/10 text-green-500 text-xs font-medium">
+                Above target
+              </div>
+            </div>
+            <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
+              <div className="text-sm text-muted-foreground font-medium mb-2">
+                Daily Savings
+              </div>
+              <div className="text-3xl font-mono font-bold mb-2">$12.4K</div>
+              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
+                Economic impact
+              </div>
+            </div>
+          </div>
+
+          {/* Peak Hour Chart */}
+          <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
+            <h2 className="text-xl font-bold mb-6 font-mono">Peak Hour Traffic Pattern</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={peakHourData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="time" 
+                  stroke="hsl(var(--muted-foreground))"
+                  style={{ fontSize: '12px' }}
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  style={{ fontSize: '12px' }}
+                />
+                <RechartsTooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    color: 'hsl(var(--foreground))',
+                  }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="vehicles"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  name="Vehicles"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Queue Analysis Chart */}
+          <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
+            <h2 className="text-xl font-bold mb-6 font-mono">Lane Performance & Queue Analysis</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={queueAnalysisData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="lane" 
+                  stroke="hsl(var(--muted-foreground))"
+                  style={{ fontSize: '12px' }}
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  style={{ fontSize: '12px' }}
+                />
+                <RechartsTooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    color: 'hsl(var(--foreground))',
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="avgWait" fill="hsl(var(--primary))" name="Avg Wait (sec)" />
+                <Bar dataKey="vehicles" fill="hsl(var(--muted-foreground))" name="Vehicles Processed" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Business Insights Grid */}
+          <div>
+            <h2 className="text-2xl font-bold mb-6 font-mono">Comprehensive Business Insights</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {businessInsights.map((insight, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    "rounded-xl border bg-card/80 backdrop-blur p-6 space-y-4",
+                    getImportanceBg(insight.importance)
+                  )}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-lg bg-background/50 flex items-center justify-center">
+                      <div className={getImportanceColor(insight.importance)}>
+                        {insight.icon}
+                      </div>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold">{insight.title}</h3>
+                        {getTrendIcon(insight.trend)}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{insight.description}</p>
+                      <div className="flex items-center gap-3">
+                        <div className="text-2xl font-mono font-bold">{insight.value}</div>
+                        <div className={cn(
+                          "px-2 py-1 rounded-md text-xs font-medium",
+                          insight.importance === 'critical' ? 'bg-destructive/10 text-destructive' :
+                          insight.importance === 'high' ? 'bg-orange-500/10 text-orange-500' :
+                          insight.importance === 'medium' ? 'bg-primary/10 text-primary' :
+                          'bg-muted text-muted-foreground'
+                        )}>
+                          {insight.importance.toUpperCase()}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  {insight.trend && (
-                    <div className={cn(
-                      "flex items-center gap-1 text-xs font-mono",
-                      insight.trend === 'up' ? "text-green-400" :
-                      insight.trend === 'down' ? "text-destructive" :
-                      "text-muted-foreground"
-                    )}>
-                      {insight.trend === 'up' ? <TrendingUp className="h-3 w-3" /> : 
-                       insight.trend === 'down' ? <TrendingDown className="h-3 w-3" /> : null}
-                    </div>
-                  )}
+                  <div className="h-px bg-border" />
+                  <ul className="space-y-2">
+                    {insight.details.map((detail, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm">
+                        <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <span className="text-muted-foreground">{detail}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-
-                <h3 className="font-semibold text-foreground mb-1">{insight.title}</h3>
-                <p className="text-sm text-muted-foreground mb-3">{insight.description}</p>
-                <p className="text-2xl font-bold font-mono text-primary mb-4">{insight.value}</p>
-
-                <div className="space-y-2">
-                  {insight.details.map((detail, i) => (
-                    <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                      <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                      <span>{detail}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Peak Hour Traffic */}
-            <div className="rounded-xl border border-border bg-card p-6">
-              <div className="mb-6">
-                <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                  Peak Hour Traffic
-                </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Vehicles per hour throughout the day
-                </p>
-              </div>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={peakHourData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 18%)" vertical={false} />
-                    <XAxis dataKey="time" stroke="hsl(0, 0%, 50%)" style={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} />
-                    <YAxis stroke="hsl(0, 0%, 50%)" style={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(0, 0%, 4%)',
-                        border: '1px solid hsl(0, 0%, 18%)',
-                        borderRadius: '8px',
-                        fontFamily: 'JetBrains Mono',
-                        fontSize: '12px',
-                      }}
-                    />
-                    <Line type="monotone" dataKey="vehicles" stroke="hsl(217, 91%, 60%)" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Queue Analysis */}
-            <div className="rounded-xl border border-border bg-card p-6">
-              <div className="mb-6">
-                <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                  Lane Performance
-                </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Average wait time by lane (seconds)
-                </p>
-              </div>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={queueAnalysisData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 18%)" vertical={false} />
-                    <XAxis dataKey="lane" stroke="hsl(0, 0%, 50%)" style={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} />
-                    <YAxis stroke="hsl(0, 0%, 50%)" style={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(0, 0%, 4%)',
-                        border: '1px solid hsl(0, 0%, 18%)',
-                        borderRadius: '8px',
-                        fontFamily: 'JetBrains Mono',
-                        fontSize: '12px',
-                      }}
-                    />
-                    <Bar dataKey="avgWait" fill="hsl(217, 91%, 60%)" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Statistics Table */}
-          <div className="rounded-xl border border-border bg-card p-6">
-            <div className="mb-6">
-              <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                Lane Statistics
-              </h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Detailed performance metrics
-              </p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 text-xs font-mono text-muted-foreground">LANE</th>
-                    <th className="text-left py-3 px-4 text-xs font-mono text-muted-foreground">AVG WAIT</th>
-                    <th className="text-left py-3 px-4 text-xs font-mono text-muted-foreground">MAX WAIT</th>
-                    <th className="text-left py-3 px-4 text-xs font-mono text-muted-foreground">VEHICLES</th>
-                    <th className="text-left py-3 px-4 text-xs font-mono text-muted-foreground">STATUS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {queueAnalysisData.map((lane, i) => (
-                    <tr key={i} className="border-b border-border hover:bg-muted/50 transition-colors">
-                      <td className="py-3 px-4 font-mono text-sm">{lane.lane}</td>
-                      <td className="py-3 px-4 font-mono text-sm">{lane.avgWait}s</td>
-                      <td className="py-3 px-4 font-mono text-sm">{lane.maxWait}s</td>
-                      <td className="py-3 px-4 font-mono text-sm">{lane.vehicles}</td>
-                      <td className="py-3 px-4">
-                        <span className={cn(
-                          "inline-block px-2 py-1 rounded text-xs font-mono",
-                          lane.avgWait < 40 ? "bg-green-500/10 text-green-400 border border-green-500/30" :
-                          lane.avgWait < 60 ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30" :
-                          "bg-destructive/10 text-destructive border border-destructive/30"
-                        )}>
-                          {lane.avgWait < 40 ? 'OPTIMAL' : lane.avgWait < 60 ? 'MODERATE' : 'SLOW'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* Value Proposition */}
+          <div className="rounded-xl border border-border bg-card/50 backdrop-blur p-8">
+            <h2 className="text-2xl font-bold mb-6 font-mono">Why These Insights Matter</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="space-y-3">
+                <h3 className="text-lg font-bold">For Traffic Authorities</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Real-time data enables dynamic traffic signal optimization, reducing congestion by up to 30% and improving overall traffic flow efficiency.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <h3 className="text-lg font-bold">For City Planners</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Historical patterns and predictions guide infrastructure investments, lane expansions, and smart city initiatives with data-backed decisions.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <h3 className="text-lg font-bold">For Emergency Services</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Instant lane clearance notifications and optimized routing save critical seconds, potentially saving lives during medical emergencies.
+                </p>
+              </div>
             </div>
           </div>
         </div>
