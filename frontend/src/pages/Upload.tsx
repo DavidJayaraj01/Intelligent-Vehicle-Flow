@@ -145,10 +145,10 @@ const Upload: React.FC = () => {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const endpoint = tabValue === 0 
-        ? `${API_BASE}/detect/image`
-        : `${API_BASE}/detect/video`;
+        ? `${API_BASE}/api/v1/detect/image`
+        : `${API_BASE}/api/v1/detect/video`;
 
       const response = await fetch(endpoint, {
         method: 'POST',

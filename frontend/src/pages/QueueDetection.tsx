@@ -96,8 +96,8 @@ const QueueDetection: React.FC = () => {
         });
       }, 200);
 
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
-      const response = await fetch(`${API_BASE}/queue/detect`, {
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE}/api/v1/queue/detect`, {
         method: 'POST',
         body: formData,
       });
@@ -115,7 +115,7 @@ const QueueDetection: React.FC = () => {
       
       if (data.is_video && data.output_path) {
         // For videos, use the full URL
-        const baseUrl = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
         outputUrl = `${baseUrl}${data.output_path}`;
         console.log('Video URL:', outputUrl);
       } else if (data.output_base64) {

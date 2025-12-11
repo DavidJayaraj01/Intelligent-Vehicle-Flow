@@ -5,7 +5,7 @@
 import axios, { type AxiosInstance } from 'axios';
 import { getApiKey } from '../utils/auth';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // Create axios instance with default config
 const apiClient: AxiosInstance = axios.create({

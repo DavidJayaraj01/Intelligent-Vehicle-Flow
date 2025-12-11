@@ -84,8 +84,8 @@ const EmergencyDetection: React.FC = () => {
         });
       }, 200);
 
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
-      const response = await fetch(`${API_BASE}/emergency/detect`, {
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE}/api/v1/emergency/detect`, {
         method: 'POST',
         body: formData,
       });
@@ -104,7 +104,7 @@ const EmergencyDetection: React.FC = () => {
       // If video, use the video URL
       if (data.isVideo && data.videoUrl) {
         console.log('Video URL:', data.videoUrl);
-        const baseUrl = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
         setResults({
           ...data,
           videoUrl: `${baseUrl}${data.videoUrl}`,
