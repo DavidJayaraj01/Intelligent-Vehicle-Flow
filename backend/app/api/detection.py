@@ -89,6 +89,97 @@ async def detect_vehicles_in_image(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/video")
+async def detect_vehicles_in_video(
+    file: UploadFile = File(...),
+    confidence: float = Query(0.5, ge=0.0, le=1.0)
+):
+    """
+    Process video file and detect vehicles in frames.
+    
+    Args:
+        file: Video file (MP4, AVI, MOV, etc.)
+        confidence: Minimum confidence threshold (0.0 to 1.0)
+        
+    Returns:
+        JSON with aggregated detections from video frames
+    """
+    import time
+    import tempfile
+    start_time = time.time()
+    
+    try:
+        # Save uploaded video to temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
+            contents = await file.read()
+            tmp_file.write(contents)
+            tmp_path = tmp_file.name
+        
+        # Open video
+        cap = cv2.VideoCapture(tmp_path)
+        if not cap.isOpened():
+            raise HTTPException(status_code=400, detail="Invalid video file")
+        
+        # Get video properties
+        fps = int(cap.get(cv2.CAP_PROP_FPS))
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        
+        # Get detector
+        detector = get_detector()
+        detector.confidence_threshold = confidence
+        
+        # Process frames (sample every 30 frames to avoid overload)
+        all_detections = []
+        frame_count = 0
+        sample_rate = max(1, fps // 2)  # Sample 2 times per second
+        
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+            
+            if frame_count % sample_rate == 0:
+                detections = detector.detect(frame)
+                for det in detections:
+                    det['frame'] = frame_count
+                    det['timestamp'] = frame_count / fps
+                all_detections.extend(detections)
+            
+            frame_count += 1
+        
+        cap.release()
+        
+        # Clean up temp file
+        import os
+        os.unlink(tmp_path)
+        
+        processing_time = time.time() - start_time
+        
+        # Get unique vehicle counts
+        vehicle_counts = {}
+        for det in all_detections:
+            vehicle_class = det['class']
+            vehicle_counts[vehicle_class] = vehicle_counts.get(vehicle_class, 0) + 1
+        
+        return {
+            "detections": all_detections,
+            "total_detections": len(all_detections),
+            "vehicle_counts": vehicle_counts,
+            "frames_processed": frame_count,
+            "total_frames": total_frames,
+            "fps": fps,
+            "video_size": [width, height],
+            "processing_time": round(processing_time, 2),
+            "sample_rate": sample_rate
+        }
+        
+    except Exception as e:
+        logger.error(f"Video detection error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/video-frame")
 async def detect_vehicles_in_frame(
     file: UploadFile = File(...),

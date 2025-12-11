@@ -38,13 +38,22 @@ interface Detection {
   bbox: [number, number, number, number];
   confidence: number;
   class: string;
+  frame?: number;
+  timestamp?: number;
 }
 
 interface DetectionResult {
   detections: Detection[];
-  count: number;
+  count?: number;
+  total_detections?: number;
   processing_time: number;
-  image_size: [number, number];
+  image_size?: [number, number];
+  video_size?: [number, number];
+  vehicle_counts?: { [key: string]: number };
+  frames_processed?: number;
+  total_frames?: number;
+  fps?: number;
+  sample_rate?: number;
 }
 
 const Upload: React.FC = () => {
@@ -113,42 +122,59 @@ const Upload: React.FC = () => {
 
   const drawDetections = (imageElement: HTMLImageElement, detections: Detection[]) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      console.error('Canvas ref not available');
+      return;
+    }
 
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      console.error('Canvas context not available');
+      return;
+    }
 
     // Set canvas size to match image
-    canvas.width = imageElement.naturalWidth;
-    canvas.height = imageElement.naturalHeight;
+    canvas.width = imageElement.naturalWidth || imageElement.width;
+    canvas.height = imageElement.naturalHeight || imageElement.height;
+
+    console.log('Canvas dimensions:', canvas.width, canvas.height);
+    console.log('Drawing detections:', detections.length);
 
     // Draw image
     ctx.drawImage(imageElement, 0, 0);
 
     // Draw detections
-    detections.forEach((detection) => {
+    detections.forEach((detection, idx) => {
       const [x1, y1, x2, y2] = detection.bbox;
       const width = x2 - x1;
       const height = y2 - y1;
 
+      console.log(`Detection ${idx}:`, { x1, y1, x2, y2, width, height, class: detection.class });
+
+      // Get color based on vehicle type
+      const color = getVehicleTypeColor(detection.class);
+
       // Draw bounding box
-      ctx.strokeStyle = '#00ff00';
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 4;
       ctx.strokeRect(x1, y1, width, height);
 
       // Draw label background
       const label = `${detection.class} ${(detection.confidence * 100).toFixed(1)}%`;
-      ctx.font = 'bold 16px Arial';
+      ctx.font = 'bold 18px Arial';
       const textMetrics = ctx.measureText(label);
-      const textHeight = 20;
+      const textHeight = 24;
+      const padding = 8;
 
-      ctx.fillStyle = 'rgba(0, 255, 0, 0.8)';
-      ctx.fillRect(x1, y1 - textHeight - 4, textMetrics.width + 10, textHeight + 4);
+      ctx.fillStyle = color;
+      ctx.fillRect(x1, y1 - textHeight - padding, textMetrics.width + padding * 2, textHeight + padding);
 
       // Draw label text
-      ctx.fillStyle = '#000';
-      ctx.fillText(label, x1 + 5, y1 - 8);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(label, x1 + padding, y1 - padding);
     });
+    
+    console.log('Drawing complete');
   };
 
   const handleDetect = async () => {
@@ -175,13 +201,30 @@ const Upload: React.FC = () => {
       }
 
       const result: DetectionResult = await response.json();
+      console.log('Detection result:', result);
+      
+      // Normalize the result to have a count field
+      if (tabValue === 1 && result.total_detections !== undefined) {
+        result.count = result.total_detections;
+      }
+      
       setDetectionResult(result);
 
-      // Draw detections on canvas for images
+      // Draw detections on canvas for images - use setTimeout to ensure canvas is rendered
       if (tabValue === 0 && preview) {
+        console.log('Creating image for drawing detections');
         const img = new Image();
+        img.crossOrigin = 'anonymous'; // Enable CORS
         img.onload = () => {
-          drawDetections(img, result.detections);
+          console.log('Image loaded, dimensions:', img.width, img.height);
+          // Wait for React to render the canvas element
+          setTimeout(() => {
+            drawDetections(img, result.detections);
+          }, 100);
+        };
+        img.onerror = (err) => {
+          console.error('Image load error:', err);
+          setError('Failed to load image for detection visualization');
         };
         img.src = preview;
       }
@@ -204,12 +247,15 @@ const Upload: React.FC = () => {
       bus: '#2196f3',
       motorcycle: '#9c27b0',
       bicycle: '#00bcd4',
+      bike: '#00bcd4',
+      person: '#f44336',
+      van: '#ff5722',
     };
-    return colors[vehicleType.toLowerCase()] || '#757575';
+    return colors[vehicleType.toLowerCase()] || '#00ff00';
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', flexDirection: { xs: 'column', md: 'row' } }}>
       <Sidebar
         open={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
@@ -220,8 +266,9 @@ const Upload: React.FC = () => {
       <Box
         sx={{
           flexGrow: 1,
-          marginLeft: sidebarOpen ? '280px' : '72px',
+          marginLeft: { xs: 0, md: sidebarOpen ? '280px' : '72px' },
           transition: 'margin-left 0.3s',
+          width: { xs: '100%', md: 'auto' },
         }}
       >
         {/* AppBar */}
@@ -242,7 +289,14 @@ const Upload: React.FC = () => {
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 600 }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                flexGrow: 1, 
+                fontWeight: 600,
+                fontSize: { xs: '1rem', sm: '1.25rem' }
+              }}
+            >
               Vehicle Flow Analyzer
             </Typography>
             <IconButton color="inherit" onClick={handleLogout}>
@@ -545,7 +599,11 @@ const Upload: React.FC = () => {
                       }}
                     >
                       <Typography variant="h3" sx={{ fontWeight: 700, color: '#22c55e', mb: 1, fontSize: { xs: '1.5rem', sm: '1.8rem' } }}>
-                        {detectionResult.image_size[0]}×{detectionResult.image_size[1]}
+                        {detectionResult.image_size 
+                          ? `${detectionResult.image_size[0]}×${detectionResult.image_size[1]}`
+                          : detectionResult.video_size 
+                          ? `${detectionResult.video_size[0]}×${detectionResult.video_size[1]}`
+                          : 'N/A'}
                       </Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                         Resolution
@@ -553,6 +611,116 @@ const Upload: React.FC = () => {
                     </Paper>
                   </Grid>
                 </Grid>
+
+                {/* Video-specific stats */}
+                {detectionResult.frames_processed && (
+                  <Box sx={{ mt: 3 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 2, color: 'text.secondary', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                      Video Analysis Details:
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={6} sm={3}>
+                        <Paper 
+                          elevation={0}
+                          sx={{ 
+                            p: { xs: 1.5, sm: 2 }, 
+                            textAlign: 'center',
+                            bgcolor: 'rgba(255, 255, 255, 0.05)',
+                            borderRadius: 1,
+                          }}
+                        >
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: '#60a5fa', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                            {detectionResult.frames_processed}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                            Frames Analyzed
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <Paper 
+                          elevation={0}
+                          sx={{ 
+                            p: { xs: 1.5, sm: 2 }, 
+                            textAlign: 'center',
+                            bgcolor: 'rgba(255, 255, 255, 0.05)',
+                            borderRadius: 1,
+                          }}
+                        >
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: '#60a5fa', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                            {detectionResult.fps}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                            Video FPS
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <Paper 
+                          elevation={0}
+                          sx={{ 
+                            p: { xs: 1.5, sm: 2 }, 
+                            textAlign: 'center',
+                            bgcolor: 'rgba(255, 255, 255, 0.05)',
+                            borderRadius: 1,
+                          }}
+                        >
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: '#60a5fa', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                            {detectionResult.total_frames}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                            Total Frames
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <Paper 
+                          elevation={0}
+                          sx={{ 
+                            p: { xs: 1.5, sm: 2 }, 
+                            textAlign: 'center',
+                            bgcolor: 'rgba(255, 255, 255, 0.05)',
+                            borderRadius: 1,
+                          }}
+                        >
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: '#60a5fa', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                            {detectionResult.sample_rate}x
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                            Sample Rate
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                    </Grid>
+
+                    {detectionResult.vehicle_counts && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="subtitle2" sx={{ mb: 1.5, color: 'text.secondary', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                          Vehicle Type Distribution:
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                          {Object.entries(detectionResult.vehicle_counts).map(([type, count]) => (
+                            <Paper 
+                              key={type}
+                              elevation={0}
+                              sx={{ 
+                                px: 2, 
+                                py: 1,
+                                bgcolor: getVehicleTypeColor(type),
+                                borderRadius: 2,
+                              }}
+                            >
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#fff', fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
+                                {type}: {count}
+                              </Typography>
+                            </Paper>
+                          ))}
+                        </Box>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+
 
                 <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
 
@@ -669,18 +837,39 @@ const Upload: React.FC = () => {
                     )}
 
                     {preview && tabValue === 0 && (
-                      <Box sx={{ position: 'relative', transform: `scale(${zoom})`, transformOrigin: 'center', p: 2 }}>
+                      <Box 
+                        sx={{ 
+                          position: 'relative', 
+                          transform: `scale(${zoom})`, 
+                          transformOrigin: 'center', 
+                          p: 2,
+                          maxWidth: '100%',
+                          overflow: 'auto',
+                        }}
+                      >
                         {!detectionResult && (
                           <img
                             src={preview}
                             alt="Preview"
-                            style={{ maxWidth: '100%', display: 'block', borderRadius: '8px' }}
+                            style={{ 
+                              width: '100%',
+                              height: 'auto',
+                              display: 'block', 
+                              borderRadius: '8px',
+                              objectFit: 'contain',
+                            }}
                           />
                         )}
                         {detectionResult && (
                           <canvas
                             ref={canvasRef}
-                            style={{ maxWidth: '100%', display: 'block', borderRadius: '8px' }}
+                            style={{ 
+                              width: '100%',
+                              height: 'auto',
+                              display: 'block', 
+                              borderRadius: '8px',
+                              objectFit: 'contain',
+                            }}
                           />
                         )}
                       </Box>
