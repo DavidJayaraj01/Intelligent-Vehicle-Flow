@@ -226,7 +226,7 @@ const Upload: React.FC = () => {
       <Box
         sx={{
           flexGrow: 1,
-          marginLeft: sidebarOpen ? '280px' : '72px',
+          marginLeft: { xs: 0, md: sidebarOpen ? '200px' : '60px' },
           transition: 'margin-left 0.3s',
           bgcolor: '#000000',
           minHeight: '100vh',
