@@ -26,6 +26,7 @@ import {
   Refresh,
   CheckCircle,
   Error as ErrorIcon,
+  Menu as MenuIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import Sidebar from '../components/Sidebar';
@@ -232,6 +233,25 @@ const Upload: React.FC = () => {
           minHeight: '100vh',
         }}
       >
+        {/* Mobile Menu Button */}
+        <IconButton
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          sx={{
+            display: { xs: 'flex', md: 'none' },
+            position: 'fixed',
+            top: 16,
+            left: 16,
+            zIndex: 1200,
+            bgcolor: '#1e293b',
+            color: '#ffffff',
+            '&:hover': {
+              bgcolor: '#334155',
+            },
+          }}
+        >
+          <MenuIcon />
+        </IconButton>
+
         <Layout>
           {/* Hero Section */}
           <Box sx={{ mb: 8 }}>
