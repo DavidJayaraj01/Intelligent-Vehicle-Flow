@@ -85,7 +85,7 @@ export function EventTable({ events, loading = false }: EventTableProps) {
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={cameraFilter} onValueChange={setCameraFilter}>
+            <Select value={cameraFilter} onChange={(e) => setCameraFilter(e.target.value)}>
               <SelectTrigger className="w-32 border-border bg-secondary text-foreground">
                 <SelectValue placeholder="Camera" />
               </SelectTrigger>
@@ -100,7 +100,7 @@ export function EventTable({ events, loading = false }: EventTableProps) {
             </Select>
           </div>
 
-          <Select value={classFilter} onValueChange={setClassFilter}>
+          <Select value={classFilter} onChange={(e) => setClassFilter(e.target.value)}>
             <SelectTrigger className="w-28 border-border bg-secondary text-foreground">
               <SelectValue placeholder="Class" />
             </SelectTrigger>
