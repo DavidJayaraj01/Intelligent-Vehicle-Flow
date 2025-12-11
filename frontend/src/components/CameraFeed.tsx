@@ -121,40 +121,85 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId, cameraName, detection
   return (
     <Paper
       elevation={0}
+      className="glass-card fade-in"
       sx={{
-        p: 3.5,
-        background: 'rgba(255, 255, 255, 0.03)',
-        backdropFilter: 'none',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        p: 4,
+        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.05) 100%)',
+        backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(59, 130, 246, 0.2)',
         color: 'white',
         height: '100%',
-        borderRadius: '16px',
-        boxShadow: 'none',
+        borderRadius: '20px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        '&:hover': {
+          borderColor: 'rgba(59, 130, 246, 0.4)',
+          boxShadow: '0 12px 48px rgba(59, 130, 246, 0.2)',
+        }
       }}
     >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Box>
           <Typography 
-            variant="h6"
+            variant="h5"
             sx={{ 
-              fontWeight: 700,
-              color: '#ffffff'
+              fontWeight: 800,
+              color: '#ffffff',
+              mb: 0.5,
+              fontSize: { xs: '1.25rem', md: '1.5rem' },
             }}
           >
             {cameraName}
           </Typography>
-          <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-            Camera ID: {cameraId} • {detections.length} active detections
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: 600 }}>
+              {cameraId}
+            </Typography>
+            <Box
+              sx={{
+                bgcolor: detections.length > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(148, 163, 184, 0.15)',
+                border: `1px solid ${detections.length > 0 ? 'rgba(16, 185, 129, 0.3)' : 'rgba(148, 163, 184, 0.3)'}`,
+                borderRadius: '12px',
+                px: 2,
+                py: 0.5,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: detections.length > 0 ? '#10b981' : '#94a3b8',
+                  animation: detections.length > 0 ? 'pulse 2s ease-in-out infinite' : 'none',
+                }}
+              />
+              <Typography variant="caption" sx={{ 
+                color: detections.length > 0 ? '#10b981' : '#94a3b8',
+                fontWeight: 700,
+                fontSize: '0.75rem',
+              }}>
+                {detections.length} Active
+              </Typography>
+            </Box>
+          </Box>
         </Box>
         <Box>
           <IconButton 
             size="small" 
             onClick={handleZoomOut} 
             sx={{ 
-              color: '#94a3b8',
+              color: 'rgba(255, 255, 255, 0.6)',
+              bgcolor: 'rgba(255, 255, 255, 0.05)',
               mr: 1,
-              '&:hover': { color: '#0ea5e9' }
+              transition: 'all 0.2s',
+              '&:hover': { 
+                color: '#3b82f6',
+                bgcolor: 'rgba(59, 130, 246, 0.15)',
+                transform: 'scale(1.1)',
+              }
             }}
           >
             <ZoomOut />
@@ -163,9 +208,15 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId, cameraName, detection
             size="small" 
             onClick={handleZoomIn} 
             sx={{ 
-              color: '#94a3b8',
+              color: 'rgba(255, 255, 255, 0.6)',
+              bgcolor: 'rgba(255, 255, 255, 0.05)',
               mr: 1,
-              '&:hover': { color: '#0ea5e9' }
+              transition: 'all 0.2s',
+              '&:hover': { 
+                color: '#3b82f6',
+                bgcolor: 'rgba(59, 130, 246, 0.15)',
+                transform: 'scale(1.1)',
+              }
             }}
           >
             <ZoomIn />
@@ -173,8 +224,14 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId, cameraName, detection
           <IconButton 
             size="small" 
             sx={{ 
-              color: '#94a3b8',
-              '&:hover': { color: '#0ea5e9' }
+              color: 'rgba(255, 255, 255, 0.6)',
+              bgcolor: 'rgba(255, 255, 255, 0.05)',
+              transition: 'all 0.2s',
+              '&:hover': { 
+                color: '#3b82f6',
+                bgcolor: 'rgba(59, 130, 246, 0.15)',
+                transform: 'scale(1.1)',
+              }
             }}
           >
             <Fullscreen />
@@ -185,11 +242,15 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId, cameraName, detection
       {/* Canvas for drawing detections */}
       <Box sx={{ 
         position: 'relative', 
-        backgroundColor: '#0f172a', 
-        borderRadius: '14px', 
+        backgroundColor: '#0a0e1a', 
+        borderRadius: '16px', 
         overflow: 'hidden', 
-        border: '1px solid rgba(14, 165, 233, 0.15)',
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+        border: '2px solid rgba(59, 130, 246, 0.2)',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4), inset 0 0 60px rgba(59, 130, 246, 0.05)',
+        transition: 'all 0.3s',
+        '&:hover': {
+          borderColor: 'rgba(59, 130, 246, 0.4)',
+        }
       }}>
         <canvas
           ref={canvasRef}
@@ -222,7 +283,7 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId, cameraName, detection
       </Box>
 
       {/* Detection Stats */}
-      <Box sx={{ mt: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+      <Box sx={{ mt: 4, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
         {Object.entries(
           detections.reduce((acc, det) => {
             acc[det.class] = (acc[det.class] || 0) + 1;
@@ -232,12 +293,21 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId, cameraName, detection
           <Chip
             key={className}
             label={`${className.charAt(0).toUpperCase() + className.slice(1)}: ${count}`}
-            size="small"
+            size="medium"
+            className="fade-in"
             sx={{
-              backgroundColor: `${COLORS[className] || '#94a3b8'}20`,
+              background: `linear-gradient(135deg, ${COLORS[className] || '#94a3b8'}30, ${COLORS[className] || '#94a3b8'}15)`,
               color: COLORS[className] || '#94a3b8',
-              fontWeight: 600,
-              border: `1px solid ${COLORS[className] || '#94a3b8'}40`,
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              border: `2px solid ${COLORS[className] || '#94a3b8'}50`,
+              px: 2,
+              py: 1.5,
+              transition: 'all 0.3s',
+              '&:hover': {
+                transform: 'scale(1.05)',
+                boxShadow: `0 4px 12px ${COLORS[className] || '#94a3b8'}40`,
+              }
             }}
           />
         ))}

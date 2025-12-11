@@ -50,7 +50,7 @@ const navItems = [
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCameraSelect }) => {
-  const drawerWidth = 200;
+  const drawerWidth = 280;
   const collapsedWidth = 64;
   const navigate = useNavigate();
   const location = useLocation();
@@ -150,38 +150,56 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
             return (
-              <ListItem key={item.id} disablePadding sx={{ mb: 0.25 }}>
+              <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton
                   onClick={() => navigate(item.path)}
                   sx={{
-                    borderRadius: '8px',
-                    py: 1,
-                    px: 1.5,
-                    minHeight: 40,
+                    borderRadius: '12px',
+                    py: 1.5,
+                    px: 2,
+                    minHeight: 48,
                     justifyContent: open ? 'flex-start' : 'center',
-                    color: isActive ? '#0ea5e9' : 'rgba(255, 255, 255, 0.6)',
-                    bgcolor: isActive ? 'rgba(14, 165, 233, 0.1)' : 'transparent',
+                    color: isActive ? '#3b82f6' : 'rgba(255, 255, 255, 0.6)',
+                    background: isActive ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.1))' : 'transparent',
+                    border: isActive ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid transparent',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
                     '&:hover': {
                       color: '#ffffff',
-                      bgcolor: 'rgba(14, 165, 233, 0.08)',
+                      background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(139, 92, 246, 0.08))',
+                      borderColor: 'rgba(59, 130, 246, 0.2)',
+                      transform: 'translateX(4px)',
                     },
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: '3px',
+                      background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                      opacity: isActive ? 1 : 0,
+                      transition: 'opacity 0.3s',
+                    }
                   }}
                 >
                   <ListItemIcon
                     sx={{
                       color: 'inherit',
-                      minWidth: open ? 36 : 0,
+                      minWidth: open ? 40 : 0,
                       justifyContent: 'center',
                     }}
                   >
-                    <Icon sx={{ fontSize: 20 }} />
+                    <Icon sx={{ fontSize: 22 }} />
                   </ListItemIcon>
                   {open && (
                     <ListItemText
                       primary={item.label}
                       primaryTypographyProps={{
-                        fontSize: '0.85rem',
-                        fontWeight: isActive ? 600 : 400,
+                        fontSize: '0.9rem',
+                        fontWeight: isActive ? 700 : 500,
+                        letterSpacing: '0.02em',
                       }}
                     />
                   )}
@@ -194,15 +212,15 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
 
       {/* Camera Feeds */}
       {open && (
-        <Box sx={{ py: 1, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <Box sx={{ py: 2, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <Typography
             sx={{
               px: 2,
               py: 1,
-              fontSize: '0.65rem',
-              fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.35)',
-              letterSpacing: '0.5px',
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              color: 'rgba(255, 255, 255, 0.4)',
+              letterSpacing: '1px',
               textTransform: 'uppercase',
             }}
           >
@@ -212,39 +230,44 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
             {cameras.map((camera) => {
               const isSelected = selectedCamera === camera.id;
               return (
-                <ListItem key={camera.id} disablePadding sx={{ mb: 0.25 }}>
+                <ListItem key={camera.id} disablePadding sx={{ mb: 0.5 }}>
                   <ListItemButton
                     selected={isSelected}
                     onClick={() => onCameraSelect(camera.id)}
                     sx={{
-                      borderRadius: '8px',
-                      py: 0.75,
-                      px: 1.5,
+                      borderRadius: '12px',
+                      py: 1.25,
+                      px: 2,
                       color: isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.6)',
-                      bgcolor: isSelected ? 'rgba(14, 165, 233, 0.12)' : 'transparent',
+                      background: isSelected ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.1))' : 'transparent',
+                      border: isSelected ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid transparent',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       '&:hover': {
-                        bgcolor: 'rgba(14, 165, 233, 0.08)',
+                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 182, 212, 0.08))',
+                        borderColor: 'rgba(16, 185, 129, 0.2)',
                         color: '#ffffff',
+                        transform: 'translateX(4px)',
                       },
                       '&.Mui-selected': {
-                        bgcolor: 'rgba(14, 165, 233, 0.12)',
+                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.1))',
                         '&:hover': {
-                          bgcolor: 'rgba(14, 165, 233, 0.15)',
+                          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 182, 212, 0.12))',
                         },
                       },
                     }}
                   >
-                    <ListItemIcon sx={{ color: 'inherit', minWidth: 32 }}>
-                      <Videocam sx={{ fontSize: 18 }} />
+                    <ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>
+                      <Videocam sx={{ fontSize: 20 }} />
                     </ListItemIcon>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography
                         sx={{
-                          fontSize: '0.8rem',
-                          fontWeight: isSelected ? 500 : 400,
+                          fontSize: '0.85rem',
+                          fontWeight: isSelected ? 600 : 500,
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
+                          mb: 0.5,
                         }}
                       >
                         {camera.name}
@@ -253,17 +276,17 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, selectedCamera, onCam
                         label={camera.status}
                         size="small"
                         sx={{
-                          mt: 0.25,
-                          height: 16,
-                          fontSize: '0.6rem',
-                          fontWeight: 600,
-                          bgcolor:
+                          height: 20,
+                          fontSize: '0.65rem',
+                          fontWeight: 700,
+                          background:
                             camera.status === 'active'
-                              ? 'rgba(34, 197, 94, 0.15)'
-                              : 'rgba(251, 191, 36, 0.15)',
-                          color: camera.status === 'active' ? '#22c55e' : '#fbbf24',
+                              ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.15))'
+                              : 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.15))',
+                          color: camera.status === 'active' ? '#10b981' : '#f59e0b',
+                          border: `1px solid ${camera.status === 'active' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
                           '& .MuiChip-label': {
-                            px: 0.75,
+                            px: 1,
                           },
                         }}
                       />
