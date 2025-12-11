@@ -11,3 +11,18 @@ pytest-asyncio==0.21.1
 httpx==0.25.2
 python-multipart==0.0.6
 websockets==12.0
+
+# Computer Vision & ML
+opencv-python==4.8.1.78
+numpy==1.24.3
+torch==2.1.0
+torchvision==0.16.0
+pillow==10.1.0
+PyYAML==6.0.1
+scipy==1.11.4
+tqdm==4.66.1
+matplotlib==3.8.2
+pandas==2.1.4
+seaborn==0.13.0
+thop==0.1.1-2209072238
+ensemble-boxes==1.0.9

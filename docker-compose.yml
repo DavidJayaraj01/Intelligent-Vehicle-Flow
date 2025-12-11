@@ -1,25 +1,26 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15
-    container_name: vehicleflow-postgres
-    environment:
-      POSTGRES_USER: vehicleflow
-      POSTGRES_PASSWORD: vehicleflow123
-      POSTGRES_DB: vehicleflow
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vehicleflow"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - vehicleflow-network
+  # PostgreSQL Database (COMMENTED OUT - Using Render PostgreSQL)
+  # Uncomment if you want to use local PostgreSQL instead
+  # postgres:
+  #   image: postgres:15
+  #   container_name: vehicleflow-postgres
+  #   environment:
+  #     POSTGRES_USER: vehicleflow
+  #     POSTGRES_PASSWORD: vehicleflow123
+  #     POSTGRES_DB: vehicleflow
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U vehicleflow"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - vehicleflow-network
 
   # Redis Cache
   redis:
@@ -44,15 +45,15 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://vehicleflow:vehicleflow123@postgres:5432/vehicleflow
+      # Using Render PostgreSQL - update this in backend/.env file
+      DATABASE_URL: postgresql://david:Rcs9t2T9jc1vlkCNS3hgCq1fZLYr8VDM@dpg-d4t7jdk9c44c73bhr4vg-a.singapore-postgres.render.com/traffic_5am6
       REDIS_URL: redis://redis:6379/0
-      API_KEY_SECRET: change-this-secret-in-production
+      API_KEY_SECRET: vfa-secret-key-production-2024
       CORS_ORIGINS: http://localhost:3000,http://frontend:80
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
+      # Removed postgres dependency since using external Render database
     volumes:
       - ./backend:/app
     networks:
@@ -79,4 +80,5 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  # postgres_data:  # Commented out since using Render PostgreSQL
+  redis_data:

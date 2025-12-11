@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, JSON, Index
+from sqlalchemy import Column, Integer, String, Float, DateTime, JSON, Index, LargeBinary, DECIMAL
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -17,10 +17,11 @@ class VehicleEvent(Base):
     timestamp = Column(DateTime(timezone=True), nullable=False, index=True)
     enter_time = Column(DateTime(timezone=True), nullable=True)
     exit_time = Column(DateTime(timezone=True), nullable=True)
-    dwell_seconds = Column(Float, nullable=True)  # time spent in frame
-    lane_id = Column(String(50), nullable=True)
+    dwell_seconds = Column(DECIMAL(10, 2), nullable=True)  # time spent in frame
+    lane_id = Column(String(50), nullable=True, index=True)
     bbox = Column(JSON, nullable=True)  # bounding box coordinates {x, y, width, height}
-    confidence = Column(Float, nullable=False)  # detection confidence score
+    confidence = Column(DECIMAL(5, 4), nullable=False)  # detection confidence score (0-1)
+    embedding = Column(LargeBinary, nullable=True)  # optional feature embeddings
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
     # Composite indexes for common queries

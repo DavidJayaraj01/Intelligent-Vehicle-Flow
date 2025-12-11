@@ -11,10 +11,12 @@ class OperatorAction(Base):
     __tablename__ = "operator_actions"
     
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    operator_id = Column(String(100), nullable=False)
+    operator_id = Column(String(100), nullable=False, index=True)
     action_type = Column(String(100), nullable=False)  # e.g., 'extend_green_light', 'trigger_alert'
     params = Column(JSON, nullable=True)  # additional action parameters
     camera_id = Column(String(50), nullable=True, index=True)
+    status = Column(String(50), nullable=False, default='pending')  # pending, executed, failed, cancelled
+    executed_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
     
     # Index for querying actions by camera and time
