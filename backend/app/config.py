@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
     API_KEY_SECRET: str = "default-secret-key-change-me"
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://vehicle-flow.onrender.com,*"
+    GEMINI_API_KEY: str = ""
     
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -117,109 +117,37 @@ const Analytics: React.FC = () => {
       ],
     },
     {
-      title: 'Queue Analysis',
-      description: 'Average wait time and queue length monitoring',
-      value: '3.2 minutes',
-      trend: 'down',
-      icon: <Users className="h-5 w-5" />,
-      importance: 'high',
-      details: [
-        'Average queue length: 12 vehicles',
-        'Maximum queue detected: 28 vehicles at 6:15 PM',
-        'Queue clearance rate: 85% efficiency',
-        'Wait time reduced by 15% from last week',
-      ],
-    },
-    {
-      title: 'Lane Performance Score',
-      description: 'Real-time scoring of each traffic lane efficiency',
-      value: '87/100',
-      trend: 'up',
+      title: 'Vehicle Type Distribution',
+      description: 'Breakdown of detected vehicle types from live stream',
+      value: `${Object.keys(vehiclesByType).length} types`,
+      trend: 'stable',
       icon: <Activity className="h-5 w-5" />,
       importance: 'high',
       details: [
-        'Lane 4 performing best: 94/100 (287 vehicles processed)',
-        'Lane 3 needs attention: 72/100 (high wait times)',
-        'Overall throughput: 875 vehicles/hour',
-        'Lane utilization: 78% average',
+        `Cars: ${vehiclesByType.car || 0} (${totalVehicles > 0 ? ((vehiclesByType.car || 0) / totalVehicles * 100).toFixed(1) : 0}%)`,
+        `Trucks: ${vehiclesByType.truck || 0} (${totalVehicles > 0 ? ((vehiclesByType.truck || 0) / totalVehicles * 100).toFixed(1) : 0}%)`,
+        `Buses: ${vehiclesByType.bus || 0} (${totalVehicles > 0 ? ((vehiclesByType.bus || 0) / totalVehicles * 100).toFixed(1) : 0}%)`,
+        `Motorcycles: ${vehiclesByType.motorcycle || 0} (${totalVehicles > 0 ? ((vehiclesByType.motorcycle || 0) / totalVehicles * 100).toFixed(1) : 0}%)`,
       ],
     },
     {
-      title: 'Congestion Hotspots',
-      description: 'AI-detected areas prone to traffic buildup',
-      value: '3 locations',
-      trend: 'stable',
-      icon: <MapPin className="h-5 w-5" />,
-      importance: 'critical',
-      details: [
-        'Junction A: High congestion 8-9 AM',
-        'Merge Point B: Bottleneck during rush hours',
-        'Exit Ramp C: Queue spillback detected',
-        'Suggested: Traffic signal timing adjustment',
-      ],
-    },
-    {
-      title: 'Emergency Response Efficiency',
-      description: 'Average time for emergency vehicle clearance',
-      value: '42 seconds',
+      title: 'Detection Accuracy',
+      description: 'Real-time vehicle detection from YouTube live stream',
+      value: `${totalVehicles.toLocaleString()} detections`,
       trend: 'up',
-      icon: <Ambulance className="h-5 w-5" />,
-      importance: 'critical',
-      details: [
-        'Emergency vehicle detected: 18 instances today',
-        'Average lane clearance time: 42 seconds',
-        '95% success rate in path clearing',
-        'Fastest response: 28 seconds',
-      ],
-    },
-    {
-      title: 'Incident Risk Prediction',
-      description: 'AI-powered prediction of potential traffic incidents',
-      value: 'Medium Risk',
-      trend: 'stable',
-      icon: <AlertTriangle className="h-5 w-5" />,
-      importance: 'medium',
-      details: [
-        'Risk score: 6.2/10 (Medium)',
-        'High-risk periods: 5-7 PM',
-        'Weather impact: Low visibility tomorrow AM',
-        'Preventive deployment recommended',
-      ],
-    },
-    {
-      title: 'Traffic Forecast (Next Hour)',
-      description: 'ML-based prediction of upcoming traffic patterns',
-      value: '+25% increase',
-      trend: 'up',
-      icon: <Gauge className="h-5 w-5" />,
+      icon: <TrendingUp className="h-5 w-5" />,
       importance: 'high',
       details: [
-        'Expected vehicles next hour: 195 (+25%)',
-        'Confidence level: 92%',
-        'Predicted queue time: 4.5 minutes',
-        'Recommendation: Pre-activate overflow lanes',
-      ],
-    },
-    {
-      title: 'Economic Impact Analysis',
-      description: 'Estimated fuel and time savings from optimized flow',
-      value: '$12,450/day',
-      trend: 'up',
-      icon: <DollarSign className="h-5 w-5" />,
-      importance: 'medium',
-      details: [
-        'Fuel savings: $8,200/day (reduced idling)',
-        'Time savings: 2,840 person-hours/day',
-        'Economic value: $4,250/day productivity gain',
-        'CO2 reduction: 1.2 tons/day',
+        `Total detections: ${totalVehicles.toLocaleString()}`,
+        `Camera: ${selectedCamera.toUpperCase()}`,
+        'Source: Live YouTube stream analysis',
+        'YOLO model: YOLOv8l',
       ],
     },
   ];
 
   const handleRefresh = () => {
-    setLoading(true);
-    // Simulate data refresh
-    setTimeout(() => setLoading(false), 1000);
+    fetchAnalyticsData();
   };
 
   const getImportanceColor = (importance: string) => {
@@ -302,36 +230,38 @@ const Analytics: React.FC = () => {
               <div className="text-sm text-muted-foreground font-medium mb-2">
                 Total Vehicles Today
               </div>
-              <div className="text-3xl font-mono font-bold mb-2">8,542</div>
+              <div className="text-3xl font-mono font-bold mb-2">{totalVehicles.toLocaleString()}</div>
               <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/10 text-green-500 text-xs font-medium">
-                +12% vs yesterday
+                Live stream data
               </div>
             </div>
             <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
               <div className="text-sm text-muted-foreground font-medium mb-2">
-                Avg Queue Time
+                Cars Detected
               </div>
-              <div className="text-3xl font-mono font-bold mb-2">3.2 min</div>
-              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/10 text-green-500 text-xs font-medium">
-                -8% improvement
-              </div>
-            </div>
-            <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
-              <div className="text-sm text-muted-foreground font-medium mb-2">
-                System Efficiency
-              </div>
-              <div className="text-3xl font-mono font-bold mb-2">87%</div>
-              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/10 text-green-500 text-xs font-medium">
-                Above target
+              <div className="text-3xl font-mono font-bold mb-2">{(vehiclesByType.car || 0).toLocaleString()}</div>
+              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-500/10 text-blue-500 text-xs font-medium">
+                {totalVehicles > 0 ? ((vehiclesByType.car || 0) / totalVehicles * 100).toFixed(1) : 0}% of total
               </div>
             </div>
             <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
               <div className="text-sm text-muted-foreground font-medium mb-2">
-                Daily Savings
+                Trucks + Buses
               </div>
-              <div className="text-3xl font-mono font-bold mb-2">$12.4K</div>
-              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
-                Economic impact
+              <div className="text-3xl font-mono font-bold mb-2">
+                {((vehiclesByType.truck || 0) + (vehiclesByType.bus || 0)).toLocaleString()}
+              </div>
+              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-orange-500/10 text-orange-500 text-xs font-medium">
+                Commercial vehicles
+              </div>
+            </div>
+            <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
+              <div className="text-sm text-muted-foreground font-medium mb-2">
+                Motorcycles
+              </div>
+              <div className="text-3xl font-mono font-bold mb-2">{(vehiclesByType.motorcycle || 0).toLocaleString()}</div>
+              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/10 text-green-500 text-xs font-medium">
+                Two-wheelers
               </div>
             </div>
           </div>

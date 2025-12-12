@@ -6,7 +6,7 @@ import logging
 
 from app.config import settings
 from app.database import init_db
-from app.api import events, metrics, tracks, actions, detection, queue, emergency, live_stream
+from app.api import events, metrics, tracks, actions, detection, queue, emergency, live_stream, reports
 from app.services.websocket_manager import ws_manager
 
 # Configure logging
@@ -68,6 +68,7 @@ app.include_router(detection.router, prefix="/api/v1")
 app.include_router(queue.router, prefix="/api/v1")
 app.include_router(emergency.router, prefix="/api/v1")
 app.include_router(live_stream.router, prefix="/api/v1")
+app.include_router(reports.router, prefix="/api/v1")
 
 
 @app.get("/health")
