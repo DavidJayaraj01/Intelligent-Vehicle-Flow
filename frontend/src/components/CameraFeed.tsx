@@ -15,11 +15,20 @@ interface CameraFeedProps {
   cameraId: string;
   cameraName: string;
   detections: Detection[];
+  youtubeUrl?: string;
 }
 
-export function CameraFeed({ cameraId, cameraName, detections }: CameraFeedProps) {
+export function CameraFeed({ cameraId, cameraName, detections, youtubeUrl }: CameraFeedProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(1);
+
+  // Extract YouTube video ID from URL
+  const getYouTubeEmbedUrl = (url: string) => {
+    const videoId = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)?.[1];
+    return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&loop=1&playlist=${videoId}` : null;
+  };
+
+  const embedUrl = youtubeUrl ? getYouTubeEmbedUrl(youtubeUrl) : null;
 
   useEffect(() => {
     drawDetections();
@@ -161,12 +170,23 @@ export function CameraFeed({ cameraId, cameraName, detections }: CameraFeedProps
 
       {/* Canvas */}
       <div className="relative aspect-video bg-background">
-        <canvas
-          ref={canvasRef}
-          width={800}
-          height={450}
-          className="h-full w-full object-contain"
-        />
+        {embedUrl ? (
+          /* YouTube Live Stream */
+          <iframe
+            src={embedUrl}
+            className="h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        ) : (
+          /* Canvas for detections */
+          <canvas
+            ref={canvasRef}
+            width={800}
+            height={450}
+            className="h-full w-full object-contain"
+          />
+        )}
         
         {/* Scan line overlay */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">

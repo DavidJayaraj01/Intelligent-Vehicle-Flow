@@ -215,6 +215,7 @@ const Dashboard: React.FC = () => {
                 cameraId={selectedCamera}
                 cameraName={getCameraName(selectedCamera)}
                 detections={detections}
+                youtubeUrl={selectedCamera === 'cam01' ? 'https://www.youtube.com/watch?v=6dp-bvQ7RWo' : undefined}
               />
             </div>
           </div>
