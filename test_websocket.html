@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test - Live Stream</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        #canvas {
+            border: 2px solid #00ff00;
+            max-width: 100%;
+            background: #000;
+        }
+        .stats {
+            margin-top: 20px;
+            padding: 15px;
+            background: #2a2a2a;
+            border-radius: 8px;
+        }
+        .stat-item {
+            margin: 5px 0;
+        }
+        #status {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .connected { background: #004400; border: 2px solid #00ff00; }
+        .disconnected { background: #440000; border: 2px solid #ff0000; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎥 YouTube Live Stream - Vehicle Detection Test</h1>
+    
+    <div id="status" class="disconnected">
+        Status: Disconnected
+    </div>
+    
+    <button onclick="connect()">Connect WebSocket</button>
+    <button onclick="disconnect()">Disconnect</button>
+    
+    <div style="margin-top: 20px;">
+        <canvas id="canvas" width="1280" height="720"></canvas>
+    </div>
+    
+    <div class="stats">
+        <h3>📊 Real-time Statistics</h3>
+        <div class="stat-item">Frames Received: <span id="frameCount">0</span></div>
+        <div class="stat-item">Total Vehicles: <span id="totalVehicles">0</span></div>
+        <div class="stat-item">Current Queue: <span id="queueLength">0</span></div>
+        <div class="stat-item">Detections in Last Frame: <span id="detections">0</span></div>
+        <div class="stat-item">Last Update: <span id="lastUpdate">Never</span></div>
+    </div>
+    
+    <div class="stats">
+        <h3>📝 Console Log</h3>
+        <div id="log" style="max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px;"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        let frameCount = 0;
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const statusDiv = document.getElementById('status');
+        const logDiv = document.getElementById('log');
+        
+        function log(message) {
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(message, isConnected) {
+            statusDiv.textContent = `Status: ${message}`;
+            statusDiv.className = isConnected ? 'connected' : 'disconnected';
+        }
+        
+        function connect() {
+            if (ws) {
+                log('⚠️ Already connected');
+                return;
+            }
+            
+            const wsUrl = 'ws://localhost:8000/api/v1/live-stream/ws';
+            log(`🔌 Connecting to: ${wsUrl}`);
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                log('✅ WebSocket connected successfully!');
+                updateStatus('Connected', true);
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'detection_update') {
+                        frameCount++;
+                        document.getElementById('frameCount').textContent = frameCount;
+                        
+                        // Display frame
+                        if (data.frame) {
+                            const img = new Image();
+                            img.onload = () => {
+                                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            };
+                            img.src = `data:image/jpeg;base64,${data.frame}`;
+                        }
+                        
+                        // Update statistics
+                        if (data.data && data.data.statistics) {
+                            const stats = data.data.statistics;
+                            document.getElementById('totalVehicles').textContent = stats.total_vehicles || 0;
+                            document.getElementById('queueLength').textContent = stats.current_queue_length || 0;
+                            document.getElementById('detections').textContent = (data.data.detections || []).length;
+                            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+                        }
+                        
+                        if (frameCount % 30 === 0) {
+                            log(`📦 Received ${frameCount} frames`);
+                        }
+                    } else if (data.type === 'stream_ended') {
+                        log('🛑 Stream ended');
+                        updateStatus('Stream Ended', false);
+                    } else if (data.type === 'status') {
+                        log(`ℹ️ Status: ${data.message}`);
+                    }
+                } catch (e) {
+                    log(`❌ Error parsing message: ${e.message}`);
+                }
+            };
+            
+            ws.onerror = (error) => {
+                log(`❌ WebSocket error: ${error}`);
+                updateStatus('Error', false);
+            };
+            
+            ws.onclose = () => {
+                log('🔌 WebSocket disconnected');
+                updateStatus('Disconnected', false);
+                ws = null;
+            };
+        }
+        
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                log('👋 Manually disconnected');
+            } else {
+                log('⚠️ Not connected');
+            }
+        }
+        
+        // Auto-connect on page load
+        window.onload = () => {
+            log('🚀 Page loaded - Click "Connect WebSocket" to start');
+        };
+    </script>
+</body>
+</html>

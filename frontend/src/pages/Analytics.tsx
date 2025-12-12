@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   TrendingUp,
   Clock,
@@ -14,8 +14,13 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Sidebar from '../components/Sidebar';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 import { cn } from '@/lib/utils';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 interface BusinessInsight {
   title: string;
@@ -29,10 +34,59 @@ interface BusinessInsight {
 
 const Analytics: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [selectedCamera, setSelectedCamera] = useState<string>('cam01');
+  const [selectedCamera, setSelectedCamera] = useState<string>('live_stream_01');
   const [loading, setLoading] = useState(false);
+  const [liveStats, setLiveStats] = useState<any>(null);
+  const [todaySummary, setTodaySummary] = useState<any>(null);
+  const [weeklySummary, setWeeklySummary] = useState<any>(null);
 
-  // Sample data - replace with real API calls
+  useEffect(() => {
+    fetchAnalytics();
+    // Refresh every 10 seconds
+    const interval = setInterval(fetchAnalytics, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchAnalytics = async () => {
+    try {
+      // Fetch live stream status for real-time detection data
+      const statusResponse = await axios.get(`${API_URL}/api/v1/live-stream/status`);
+      if (statusResponse.data && statusResponse.data.statistics) {
+        setLiveStats(statusResponse.data.statistics);
+      }
+
+      // Fetch today's summary
+      const todayResponse = await axios.get(`${API_URL}/api/v1/reports/summary/today`);
+      setTodaySummary(todayResponse.data);
+
+      // Fetch weekly summary
+      const weekResponse = await axios.get(`${API_URL}/api/v1/reports/summary/week`);
+      setWeeklySummary(weekResponse.data);
+    } catch (error) {
+      console.error('Failed to fetch analytics:', error);
+    }
+  };
+
+  const handleRefresh = () => {
+    setLoading(true);
+    fetchAnalytics().finally(() => setLoading(false));
+  };
+
+  // Prepare chart data from real-time data
+  const vehicleTypeData = liveStats?.vehicles_by_type 
+    ? Object.entries(liveStats.vehicles_by_type).map(([type, count]: [string, any]) => ({
+        name: type.charAt(0).toUpperCase() + type.slice(1),
+        value: count
+      }))
+    : [];
+
+  const dailyChartData = weeklySummary?.daily_breakdown
+    ? Object.entries(weeklySummary.daily_breakdown).map(([date, stats]: [string, any]) => ({
+        date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        vehicles: stats.total
+      }))
+    : [];
+
   const peakHourData = [
     { time: '06:00', vehicles: 45 },
     { time: '07:00', vehicles: 120 },
@@ -48,7 +102,7 @@ const Analytics: React.FC = () => {
   ];
 
   const queueAnalysisData = [
-    { lane: 'Lane 1', avgWait: 45, maxWait: 180, vehicles: 234 },
+    { lane: 'Live Stream', avgWait: liveStats?.avg_queue_time || 0, maxWait: 180, vehicles: liveStats?.total_vehicles || 0 },
     { lane: 'Lane 2', avgWait: 32, maxWait: 120, vehicles: 198 },
     { lane: 'Lane 3', avgWait: 58, maxWait: 210, vehicles: 156 },
     { lane: 'Lane 4', avgWait: 28, maxWait: 95, vehicles: 287 },
@@ -56,31 +110,31 @@ const Analytics: React.FC = () => {
 
   const businessInsights: BusinessInsight[] = [
     {
-      title: 'Peak Hour Identification',
-      description: 'Morning and evening rush hours identified with precision',
-      value: '8:00 AM & 6:00 PM',
-      trend: 'stable',
-      icon: <Clock className="h-5 w-5" />,
+      title: 'Real-time Detection Status',
+      description: 'Live YouTube stream vehicle detection with YOLOv8',
+      value: liveStats?.is_running ? 'ACTIVE' : 'STANDBY',
+      trend: liveStats?.is_running ? 'up' : 'stable',
+      icon: <Activity className="h-5 w-5" />,
       importance: 'critical',
       details: [
-        'Morning peak: 7:30 AM - 9:00 AM (280 vehicles/hour)',
-        'Evening peak: 5:30 PM - 7:00 PM (310 vehicles/hour)',
-        'Peak times account for 65% of daily traffic',
-        'Recommendation: Add 2 lanes during peak hours',
+        `Total vehicles detected: ${liveStats?.total_vehicles || 0}`,
+        `Currently in queue: ${liveStats?.current_queue_length || 0} vehicles`,
+        `Average queue time: ${liveStats?.avg_queue_time?.toFixed(1) || 0}s`,
+        `Tracked vehicles: ${liveStats?.tracked_vehicles || 0}`,
       ],
     },
     {
       title: 'Queue Analysis',
-      description: 'Average wait time and queue length monitoring',
-      value: '3.2 minutes',
+      description: 'Real-time queue monitoring with gate line detection',
+      value: `${liveStats?.avg_queue_time?.toFixed(1) || '0'} sec`,
       trend: 'down',
       icon: <Users className="h-5 w-5" />,
       importance: 'high',
       details: [
-        'Average queue length: 12 vehicles',
-        'Maximum queue detected: 28 vehicles at 6:15 PM',
-        'Queue clearance rate: 85% efficiency',
-        'Wait time reduced by 15% from last week',
+        `Current queue length: ${liveStats?.current_queue_length || 0} vehicles`,
+        'Entry gate line at 30% frame height',
+        'Exit gate line at 75% frame height',
+        'ByteTrack algorithm for vehicle ID tracking',
       ],
     },
     {
@@ -169,12 +223,6 @@ const Analytics: React.FC = () => {
     },
   ];
 
-  const handleRefresh = () => {
-    setLoading(true);
-    // Simulate data refresh
-    setTimeout(() => setLoading(false), 1000);
-  };
-
   const getImportanceColor = (importance: string) => {
     switch (importance) {
       case 'critical':
@@ -255,39 +303,128 @@ const Analytics: React.FC = () => {
               <div className="text-sm text-muted-foreground font-medium mb-2">
                 Total Vehicles Today
               </div>
-              <div className="text-3xl font-mono font-bold mb-2">8,542</div>
+              <div className="text-3xl font-mono font-bold mb-2">
+                {todaySummary?.total_detections?.toLocaleString() || '0'}
+              </div>
               <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/10 text-green-500 text-xs font-medium">
-                +12% vs yesterday
+                Live Detection
               </div>
             </div>
             <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
               <div className="text-sm text-muted-foreground font-medium mb-2">
                 Avg Queue Time
               </div>
-              <div className="text-3xl font-mono font-bold mb-2">3.2 min</div>
+              <div className="text-3xl font-mono font-bold mb-2">
+                {liveStats?.avg_queue_time?.toFixed(1) || '0'}s
+              </div>
               <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/10 text-green-500 text-xs font-medium">
-                -8% improvement
+                Real-time
               </div>
             </div>
             <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
               <div className="text-sm text-muted-foreground font-medium mb-2">
-                System Efficiency
+                Current Queue
               </div>
-              <div className="text-3xl font-mono font-bold mb-2">87%</div>
-              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/10 text-green-500 text-xs font-medium">
-                Above target
+              <div className="text-3xl font-mono font-bold mb-2">
+                {liveStats?.current_queue_length || 0}
+              </div>
+              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-orange-500/10 text-orange-500 text-xs font-medium">
+                {liveStats?.is_running ? 'LIVE' : 'Standby'}
               </div>
             </div>
             <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
               <div className="text-sm text-muted-foreground font-medium mb-2">
-                Daily Savings
+                Tracked Vehicles
               </div>
-              <div className="text-3xl font-mono font-bold mb-2">$12.4K</div>
+              <div className="text-3xl font-mono font-bold mb-2">
+                {liveStats?.tracked_vehicles || 0}
+              </div>
               <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
-                Economic impact
+                With IDs
               </div>
             </div>
           </div>
+
+          {/* Vehicle Type Distribution */}
+          {vehicleTypeData.length > 0 && (
+            <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
+              <h2 className="text-xl font-bold mb-6 font-mono">Live Vehicle Type Distribution</h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={vehicleTypeData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {vehicleTypeData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex items-center">
+                  <div className="space-y-3 w-full">
+                    {vehicleTypeData.map((item, index) => (
+                      <div key={item.name} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-4 h-4 rounded" 
+                            style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                          />
+                          <span className="text-sm font-medium">{item.name}</span>
+                        </div>
+                        <span className="text-sm font-mono font-bold">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Weekly Trend */}
+          {dailyChartData.length > 0 && (
+            <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
+              <h2 className="text-xl font-bold mb-6 font-mono">7-Day Detection Trend</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={dailyChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="hsl(var(--muted-foreground))"
+                    style={{ fontSize: '12px' }}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    style={{ fontSize: '12px' }}
+                  />
+                  <RechartsTooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      color: 'hsl(var(--foreground))',
+                    }}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="vehicles"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    name="Vehicles Detected"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
           {/* Peak Hour Chart */}
           <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">

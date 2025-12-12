@@ -6,7 +6,9 @@ import Upload from './pages/Upload';
 import QueueDetection from './pages/QueueDetection';
 import EmergencyDetection from './pages/EmergencyDetection';
 import Analytics from './pages/Analytics';
+import AnalyticsLive from './pages/AnalyticsLive';
 import Reports from './pages/Reports';
+import ReportsEnhanced from './pages/ReportsEnhanced';
 
 const theme = createTheme({
   palette: {
@@ -87,7 +89,9 @@ function App() {
           <Route path="/queue-detection" element={<QueueDetection />} />
           <Route path="/emergency" element={<EmergencyDetection />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/analytics-live" element={<AnalyticsLive />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/reports-enhanced" element={<ReportsEnhanced />} />
         </Routes>
       </Router>
     </ThemeProvider>
