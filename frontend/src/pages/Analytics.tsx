@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   TrendingUp,
   Clock,
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import Sidebar from '../components/Sidebar';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import { cn } from '@/lib/utils';
+import { getEvents } from '../services/api';
 
 interface BusinessInsight {
   title: string;
@@ -30,23 +31,55 @@ interface BusinessInsight {
 const Analytics: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedCamera, setSelectedCamera] = useState<string>('cam01');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [totalVehicles, setTotalVehicles] = useState(0);
+  const [vehiclesByType, setVehiclesByType] = useState<any>({});
+  const [peakHourData, setPeakHourData] = useState<any[]>([]);
+  
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [selectedCamera]);
+  
+  const fetchAnalyticsData = async () => {
+    setLoading(true);
+    try {
+      // Fetch all events for the selected camera
+      const response = await getEvents({ camera_id: selectedCamera, limit: 10000 });
+      const events = response.data;
+      
+      // Calculate total vehicles
+      setTotalVehicles(events.length);
+      
+      // Group by vehicle type
+      const typeCount: any = {};
+      events.forEach((event: any) => {
+        const vehicleType = (event.class || event.class_ || 'unknown').toLowerCase();
+        typeCount[vehicleType] = (typeCount[vehicleType] || 0) + 1;
+      });
+      setVehiclesByType(typeCount);
+      
+      // Group by hour for peak hour analysis
+      const hourlyCount: any = {};
+      events.forEach((event: any) => {
+        const hour = new Date(event.timestamp).getHours();
+        const timeKey = `${hour.toString().padStart(2, '0')}:00`;
+        hourlyCount[timeKey] = (hourlyCount[timeKey] || 0) + 1;
+      });
+      
+      // Convert to array and sort
+      const hourlyData = Object.entries(hourlyCount)
+        .map(([time, vehicles]) => ({ time, vehicles }))
+        .sort((a, b) => a.time.localeCompare(b.time));
+      
+      setPeakHourData(hourlyData);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching analytics data:', error);
+      setLoading(false);
+    }
+  };
 
-  // Sample data - replace with real API calls
-  const peakHourData = [
-    { time: '06:00', vehicles: 45 },
-    { time: '07:00', vehicles: 120 },
-    { time: '08:00', vehicles: 280 },
-    { time: '09:00', vehicles: 190 },
-    { time: '10:00', vehicles: 140 },
-    { time: '11:00', vehicles: 110 },
-    { time: '12:00', vehicles: 150 },
-    { time: '13:00', vehicles: 130 },
-    { time: '17:00', vehicles: 240 },
-    { time: '18:00', vehicles: 310 },
-    { time: '19:00', vehicles: 200 },
-  ];
-
+  // Queue analysis data - still using mock for now as it requires queue-specific events
   const queueAnalysisData = [
     { lane: 'Lane 1', avgWait: 45, maxWait: 180, vehicles: 234 },
     { lane: 'Lane 2', avgWait: 32, maxWait: 120, vehicles: 198 },
@@ -56,17 +89,31 @@ const Analytics: React.FC = () => {
 
   const businessInsights: BusinessInsight[] = [
     {
+      title: 'Total Vehicles Today',
+      description: 'Real-time vehicle count from live stream analysis',
+      value: totalVehicles.toLocaleString(),
+      trend: 'up',
+      icon: <Activity className="h-5 w-5" />,
+      importance: 'critical',
+      details: [
+        `Cars detected: ${vehiclesByType.car || 0}`,
+        `Trucks detected: ${vehiclesByType.truck || 0}`,
+        `Buses detected: ${vehiclesByType.bus || 0}`,
+        `Motorcycles detected: ${vehiclesByType.motorcycle || 0}`,
+      ],
+    },
+    {
       title: 'Peak Hour Identification',
-      description: 'Morning and evening rush hours identified with precision',
-      value: '8:00 AM & 6:00 PM',
+      description: 'Traffic patterns based on real detection data',
+      value: peakHourData.length > 0 ? `${peakHourData.reduce((max, curr) => curr.vehicles > max.vehicles ? curr : max, peakHourData[0])?.time}` : 'N/A',
       trend: 'stable',
       icon: <Clock className="h-5 w-5" />,
       importance: 'critical',
       details: [
-        'Morning peak: 7:30 AM - 9:00 AM (280 vehicles/hour)',
-        'Evening peak: 5:30 PM - 7:00 PM (310 vehicles/hour)',
-        'Peak times account for 65% of daily traffic',
-        'Recommendation: Add 2 lanes during peak hours',
+        `Peak hour: ${peakHourData.length > 0 ? peakHourData.reduce((max, curr) => curr.vehicles > max.vehicles ? curr : max, peakHourData[0])?.time : 'N/A'}`,
+        `Peak vehicles: ${peakHourData.length > 0 ? peakHourData.reduce((max, curr) => curr.vehicles > max.vehicles ? curr : max, peakHourData[0])?.vehicles : 0}`,
+        `Total hours analyzed: ${peakHourData.length}`,
+        'Real-time data from live stream',
       ],
     },
     {

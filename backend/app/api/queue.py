@@ -188,3 +188,62 @@ async def health_check() -> Dict:
         "service": "queue_detection",
         "model_loaded": detector is not None
     }
+
+
+@router.post("/detect-youtube")
+async def detect_queue_youtube(youtube_url: str, duration: int = 10) -> Dict:
+    """
+    Analyze YouTube live stream for queue detection
+    
+    Args:
+        youtube_url: YouTube video/stream URL
+        duration: Duration in seconds to analyze (default 10)
+        
+    Returns:
+        Detection results with statistics
+    """
+    import yt_dlp
+    
+    try:
+        # Create temp directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_dir_path = Path(temp_dir)
+            video_path = temp_dir_path / "stream.mp4"
+            
+            # Download video segment using yt-dlp
+            ydl_opts = {
+                'format': 'best[ext=mp4]',
+                'outtmpl': str(video_path),
+                'quiet': True,
+                'no_warnings': True,
+            }
+            
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([youtube_url])
+            
+            if not video_path.exists():
+                raise HTTPException(status_code=400, detail="Failed to download video")
+            
+            # Generate output path
+            unique_id = str(uuid.uuid4())
+            output_filename = f"queue_youtube_{unique_id}.mp4"
+            output_path = OUTPUT_DIR / output_filename
+            
+            # Get detector and process
+            queue_detector = get_detector()
+            result = queue_detector.process_video(
+                str(video_path),
+                str(output_path)
+            )
+            
+            # Add output path to response
+            result['is_video'] = True
+            result['output_path'] = f"/api/v1/queue/output/{output_filename}"
+            
+            return result
+            
+    except yt_dlp.utils.DownloadError as e:
+        raise HTTPException(status_code=400, detail=f"YouTube download failed: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
+

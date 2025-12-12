@@ -9,6 +9,7 @@ import { EventTable } from './EventTable';
 import { ActionModal } from './ActionModal';
 import Sidebar from './Sidebar';
 import { CameraFeed } from './CameraFeed';
+import { LiveStreamStats } from './LiveStreamStats';
   
 interface Metrics {
   total_events: number;
@@ -39,6 +40,7 @@ const Dashboard: React.FC = () => {
   const [selectedCamera, setSelectedCamera] = useState<string>('cam01');
   const [detections, setDetections] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [latestAnalysis, setLatestAnalysis] = useState<any>(null);
 
   const fetchData = async () => {
     try {
@@ -216,9 +218,17 @@ const Dashboard: React.FC = () => {
                 cameraName={getCameraName(selectedCamera)}
                 detections={detections}
                 youtubeUrl={selectedCamera === 'cam01' ? 'https://www.youtube.com/watch?v=6dp-bvQ7RWo' : undefined}
+                onAnalysisComplete={(results) => setLatestAnalysis(results)}
               />
             </div>
           </div>
+
+          {/* Live Stream Statistics */}
+          {selectedCamera === 'cam01' && (
+            <div className="mb-8">
+              <LiveStreamStats cameraId={selectedCamera} latestAnalysis={latestAnalysis} />
+            </div>
+          )}
 
           {/* Events Table */}
           <EventTable events={events} loading={loading} />

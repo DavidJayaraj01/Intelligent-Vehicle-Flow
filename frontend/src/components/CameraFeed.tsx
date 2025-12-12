@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -16,11 +16,14 @@ interface CameraFeedProps {
   cameraName: string;
   detections: Detection[];
   youtubeUrl?: string;
+  onAnalysisComplete?: (results: any) => void;
 }
 
-export function CameraFeed({ cameraId, cameraName, detections, youtubeUrl }: CameraFeedProps) {
+export function CameraFeed({ cameraId, cameraName, detections, youtubeUrl, onAnalysisComplete }: CameraFeedProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(1);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
 
   // Extract YouTube video ID from URL
   const getYouTubeEmbedUrl = (url: string) => {
@@ -29,6 +32,50 @@ export function CameraFeed({ cameraId, cameraName, detections, youtubeUrl }: Cam
   };
 
   const embedUrl = youtubeUrl ? getYouTubeEmbedUrl(youtubeUrl) : null;
+
+  const handleAnalyzeLiveStream = async () => {
+    if (!youtubeUrl) return;
+    
+    setAnalyzing(true);
+    setAnalysisResults(null);
+    
+    try {
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      
+      // Call the backend to analyze the YouTube stream
+      const response = await fetch(`${API_BASE}/api/v1/live/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: youtubeUrl,
+          duration: 20, // Analyze 20 seconds
+          camera_id: cameraId // Pass camera ID for database storage
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setAnalysisResults(result);
+        console.log('Live stream analysis complete:', result);
+        
+        // Notify parent component
+        if (onAnalysisComplete) {
+          onAnalysisComplete(result);
+        }
+      } else {
+        const error = await response.json();
+        console.error('Analysis failed:', error);
+        alert('Failed to analyze stream: ' + (error.detail || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Failed to analyze live stream:', error);
+      alert('Error analyzing stream. Please try again.');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   useEffect(() => {
     drawDetections();
@@ -143,6 +190,17 @@ export function CameraFeed({ cameraId, cameraName, detections, youtubeUrl }: Cam
         </div>
         
         <div className="flex items-center gap-1">
+          {youtubeUrl && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={handleAnalyzeLiveStream}
+              disabled={analyzing}
+            >
+              <Play className={cn("h-4 w-4", analyzing && "animate-pulse")} />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -196,9 +254,27 @@ export function CameraFeed({ cameraId, cameraName, detections, youtubeUrl }: Cam
         {/* Detection count */}
         <div className="absolute bottom-4 left-4 rounded border border-border bg-background/80 px-3 py-1.5 backdrop-blur">
           <span className="font-mono text-xs text-foreground">
-            {detections.length} DETECTIONS
+            {analysisResults ? `${analysisResults.total_vehicles || 0} VEHICLES` : `${detections.length} DETECTIONS`}
           </span>
         </div>
+
+        {/* Analysis Results */}
+        {analysisResults && (
+          <div className="absolute bottom-4 right-4 rounded border border-green-500/30 bg-background/90 px-3 py-2 backdrop-blur max-w-xs">
+            <div className="text-xs space-y-1">
+              <div className="font-mono text-green-500 mb-2">Live Stream Analysis</div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
+                <div>Cars: <span className="text-foreground font-semibold">{analysisResults.vehicle_counts?.car || 0}</span></div>
+                <div>Trucks: <span className="text-foreground font-semibold">{analysisResults.vehicle_counts?.truck || 0}</span></div>
+                <div>Buses: <span className="text-foreground font-semibold">{analysisResults.vehicle_counts?.bus || 0}</span></div>
+                <div>Motorcycles: <span className="text-foreground font-semibold">{analysisResults.vehicle_counts?.motorcycle || 0}</span></div>
+              </div>
+              <div className="text-muted-foreground mt-2 pt-2 border-t border-border">
+                Processed: <span className="text-foreground font-semibold">{analysisResults.frames_processed || 0} frames</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Detection legend */}
