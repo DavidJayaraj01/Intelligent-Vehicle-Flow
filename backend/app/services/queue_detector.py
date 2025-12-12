@@ -354,9 +354,9 @@ class VehicleQueueDetector:
             total_vehicles = random.randint(15, 35)
             in_queue = random.randint(3, 12)
             completed_vehicles = total_vehicles - in_queue
-            avg_queue_time = round(random.uniform(25.5, 85.3), 2)
+            avg_queue_time = round(random.uniform(25.0, 45.0), 2)
             max_queue_time = round(avg_queue_time * random.uniform(1.5, 2.2), 2)
-            min_queue_time = round(avg_queue_time * random.uniform(0.4, 0.7), 2)
+            min_queue_time = round(random.uniform(5.0, 10.0), 2)
             
             # Generate mock vehicle details
             vehicle_types = ['Car', 'Truck', 'Bus', 'Motorcycle']

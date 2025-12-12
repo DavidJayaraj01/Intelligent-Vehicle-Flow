@@ -222,40 +222,40 @@ const Upload: React.FC = () => {
 
         <div className="max-w-[1600px] mx-auto p-4 sm:p-6 md:p-8 lg:p-10">
           {/* Hero Section */}
-          <div className="mb-12">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground font-mono mb-4">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground font-mono mb-2">
               Vehicle Detection
             </h1>
-            <p className="text-lg text-muted-foreground max-w-3xl">
+            <p className="text-sm text-muted-foreground max-w-3xl">
               Upload and analyze images or videos with advanced AI-powered vehicle detection technology
             </p>
           </div>
 
           {/* Tabs */}
-          <div className="rounded-xl border border-border bg-card/80 backdrop-blur mb-8 overflow-hidden">
+          <div className="rounded-xl border border-border bg-card/80 backdrop-blur mb-6 overflow-hidden">
             <div className="grid grid-cols-2">
               <button
                 onClick={() => { setTabValue(0); handleClear(); }}
                 className={cn(
-                  "flex items-center justify-center gap-3 py-6 text-lg font-bold transition-all",
+                  "flex items-center justify-center gap-2 py-4 text-sm font-semibold transition-all",
                   tabValue === 0
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
-                <ImageIcon className="h-7 w-7" />
+                <ImageIcon className="h-5 w-5" />
                 <span>Image Upload</span>
               </button>
               <button
                 onClick={() => { setTabValue(1); handleClear(); }}
                 className={cn(
-                  "flex items-center justify-center gap-3 py-6 text-lg font-bold transition-all",
+                  "flex items-center justify-center gap-2 py-4 text-sm font-semibold transition-all",
                   tabValue === 1
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
-                <VideoLibrary className="h-7 w-7" />
+                <VideoLibrary className="h-5 w-5" />
                 <span>Video Upload</span>
               </button>
             </div>
@@ -264,18 +264,18 @@ const Upload: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Upload Section */}
             <div className="rounded-xl border border-primary/20 bg-card/80 backdrop-blur p-4 space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-primary/10 flex items-center justify-center">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10 flex items-center justify-center">
                   {tabValue === 0 ? 
-                    <ImageIcon className="h-8 w-8 text-primary" /> : 
-                    <VideoLibrary className="h-8 w-8 text-primary" />
+                    <ImageIcon className="h-5 w-5 text-primary" /> : 
+                    <VideoLibrary className="h-5 w-5 text-primary" />
                   }
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">
+                  <h3 className="text-lg font-semibold">
                     {tabValue === 0 ? 'Upload Image' : 'Upload Video'}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
                     {tabValue === 0 ? 'JPG, PNG, GIF' : 'MP4, AVI, MOV'}
                   </p>
                 </div>
@@ -291,27 +291,27 @@ const Upload: React.FC = () => {
 
               <div
                 onClick={handleUploadClick}
-                className="border-3 border-dashed border-border rounded-xl p-8 text-center cursor-pointer bg-muted/20 hover:bg-muted/40 hover:border-primary/40 transition-all"
+                className="border-3 border-dashed border-border rounded-xl p-6 text-center cursor-pointer bg-muted/20 hover:bg-muted/40 hover:border-primary/40 transition-all"
               >
-                <div className="flex justify-center mb-3">
-                  <CloudUpload className="h-16 w-16 text-primary animate-pulse" />
+                <div className="flex justify-center mb-2">
+                  <CloudUpload className="h-12 w-12 text-primary animate-pulse" />
                 </div>
-                <h3 className="text-xl font-bold mb-2">
+                <h3 className="text-base font-semibold mb-1">
                   Click to select {tabValue === 0 ? 'an image' : 'a video'}
                 </h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   or drag and drop your file here
                 </p>
               </div>
 
               {selectedFile && (
                 <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/30">
+                  <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/30">
                     <div className="flex items-center gap-3">
-                      <CheckCircle className="h-8 w-8 text-green-500 flex-shrink-0" />
+                      <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold truncate">{selectedFile.name}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm font-semibold truncate">{selectedFile.name}</p>
+                        <p className="text-xs text-muted-foreground">
                           {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                         </p>
                       </div>
@@ -322,16 +322,16 @@ const Upload: React.FC = () => {
                     <Button
                       onClick={handleDetect}
                       disabled={loading}
-                      className="flex-1 h-12 text-base font-bold"
+                      className="flex-1 h-10 text-sm font-semibold"
                     >
                       {loading ? (
                         <>
-                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Analyzing...
                         </>
                       ) : (
                         <>
-                          <CloudUpload className="mr-2 h-5 w-5" />
+                          <CloudUpload className="mr-2 h-4 w-4" />
                           Detect Vehicles
                         </>
                       )}
@@ -340,9 +340,9 @@ const Upload: React.FC = () => {
                       variant="outline"
                       onClick={handleClear}
                       disabled={loading}
-                      className="h-12"
+                      className="h-10"
                     >
-                      <Delete className="h-5 w-5" />
+                      <Delete className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -364,13 +364,13 @@ const Upload: React.FC = () => {
             {/* Preview Section */}
             <div className="rounded-xl border border-primary/20 bg-card/80 backdrop-blur p-4 space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <ImageIcon className="h-8 w-8 text-primary" />
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <ImageIcon className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold">Preview</h2>
-                    <p className="text-sm text-muted-foreground">
+                    <h3 className="text-lg font-semibold">Preview</h3>
+                    <p className="text-xs text-muted-foreground">
                       {preview ? 'File loaded' : 'Waiting for file'}
                     </p>
                   </div>
@@ -427,8 +427,8 @@ const Upload: React.FC = () => {
               </div>
 
               {detectionResult && (
-                <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/30">
-                  <p className="font-bold text-green-500">
+                <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/30">
+                  <p className="text-sm font-semibold text-green-500">
                     ✓ Detection complete! {detectionResult.count} vehicle(s) in {detectionResult.processing_time.toFixed(2)}s
                   </p>
                 </div>
@@ -438,30 +438,30 @@ const Upload: React.FC = () => {
 
           {/* Results Section */}
           {detectionResult && (
-            <div className="mt-8 rounded-xl border border-green-500/30 bg-card/80 backdrop-blur p-6 space-y-6">
+            <div className="mt-6 rounded-xl border border-green-500/30 bg-card/80 backdrop-blur p-4 space-y-4">
               <div className="flex items-center gap-3">
-                <CheckCircle className="h-9 w-9 text-green-500" />
+                <CheckCircle className="h-6 w-6 text-green-500" />
                 <div>
-                  <h2 className="text-2xl font-bold text-green-500">Detection Results</h2>
-                  <p className="text-sm text-muted-foreground">Analysis complete and ready for review</p>
+                  <h3 className="text-lg font-semibold text-green-500">Detection Results</h3>
+                  <p className="text-xs text-muted-foreground">Analysis complete and ready for review</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-6 rounded-xl bg-primary/10 border border-primary/20 text-center">
-                  <div className="text-4xl font-mono font-bold text-primary mb-2">
+                <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 text-center">
+                  <div className="text-2xl font-mono font-bold text-primary mb-1">
                     {detectionResult.count}
                   </div>
-                  <div className="text-sm font-semibold text-muted-foreground">Vehicles Detected</div>
+                  <div className="text-xs font-semibold text-muted-foreground">Vehicles Detected</div>
                 </div>
-                <div className="p-6 rounded-xl bg-purple-500/10 border border-purple-500/20 text-center">
-                  <div className="text-4xl font-mono font-bold text-purple-500 mb-2">
+                <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-center">
+                  <div className="text-2xl font-mono font-bold text-purple-500 mb-1">
                     {detectionResult.processing_time.toFixed(2)}s
                   </div>
-                  <div className="text-sm font-semibold text-muted-foreground">Processing Time</div>
+                  <div className="text-xs font-semibold text-muted-foreground">Processing Time</div>
                 </div>
-                <div className="p-6 rounded-xl bg-green-500/10 border border-green-500/20 text-center">
-                  <div className="text-2xl font-mono font-bold text-green-500 mb-2">
+                <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-center">
+                  <div className="text-xl font-mono font-bold text-green-500 mb-1">
                     {detectionResult.image_size 
                       ? `${detectionResult.image_size[0]}×${detectionResult.image_size[1]}`
                       : detectionResult.video_size 
@@ -473,14 +473,14 @@ const Upload: React.FC = () => {
               </div>
 
               {detectionResult.vehicle_counts && (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div className="h-px bg-border" />
-                  <h3 className="text-lg font-bold text-primary">Vehicle Distribution</h3>
+                  <h3 className="text-sm font-semibold text-primary">Vehicle Distribution</h3>
                   <div className="flex flex-wrap gap-2">
                     {Object.entries(detectionResult.vehicle_counts).map(([type, count]) => (
                       <div
                         key={type}
-                        className="px-4 py-2 rounded-lg font-bold text-sm"
+                        className="px-3 py-1.5 rounded-lg font-semibold text-xs"
                         style={{
                           backgroundColor: `${getVehicleTypeColor(type)}20`,
                           color: getVehicleTypeColor(type),
@@ -494,16 +494,16 @@ const Upload: React.FC = () => {
                 </div>
               )}
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="h-px bg-border" />
-                <h3 className="text-lg font-bold text-primary">
+                <h3 className="text-sm font-semibold text-primary">
                   Detected Objects ({detectionResult.detections.length})
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {detectionResult.detections.map((detection, idx) => (
                     <div
                       key={idx}
-                      className="px-3 py-1.5 rounded-lg font-semibold text-sm"
+                      className="px-2.5 py-1 rounded-lg font-semibold text-xs"
                       style={{
                         backgroundColor: `${getVehicleTypeColor(detection.class)}30`,
                         color: getVehicleTypeColor(detection.class),
