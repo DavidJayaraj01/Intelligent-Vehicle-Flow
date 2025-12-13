@@ -172,7 +172,8 @@ RECOMMENDATIONS
             ['Report Generated:', datetime.now().strftime('%Y-%m-%d %H:%M:%S')],
             ['Camera:', metrics.get('camera_id', 'N/A')],
             ['Period:', f"{metrics.get('start_date', 'N/A')} to {metrics.get('end_date', 'N/A')}"],
-            ['Total Vehicles:', str(metrics.get('total_vehicles', 0))],
+            ['Total Vehicles:', f"{metrics.get('total_vehicles', 0):,}"],
+            ['Detection Accuracy:', f"{metrics.get('car_percentage', 0):.1f}% Car Detection Rate"],
         ]
         
         metadata_table = Table(metadata_data, colWidths=[2*inch, 4*inch])
@@ -190,25 +191,37 @@ RECOMMENDATIONS
         story.append(Spacer(1, 0.3*inch))
         
         # Vehicle breakdown table
-        story.append(Paragraph('Vehicle Type Distribution', heading_style))
+        story.append(Paragraph('Vehicle Type Distribution (Live Stream Analytics)', heading_style))
+        
+        # Calculate commercial vehicles
+        commercial_vehicles = metrics.get('trucks', 0) + metrics.get('buses', 0)
+        total_vehicles = metrics.get('total_vehicles', 0)
         
         vehicle_data = [
-            ['Vehicle Type', 'Count', 'Percentage'],
-            ['Cars', str(metrics.get('cars', 0)), f"{metrics.get('car_percentage', 0):.1f}%"],
-            ['Trucks', str(metrics.get('trucks', 0)), f"{metrics.get('truck_percentage', 0):.1f}%"],
-            ['Buses', str(metrics.get('buses', 0)), f"{metrics.get('bus_percentage', 0):.1f}%"],
-            ['Motorcycles', str(metrics.get('motorcycles', 0)), f"{metrics.get('motorcycle_percentage', 0):.1f}%"],
+            ['Vehicle Type', 'Count', 'Percentage', 'Category'],
+            ['Cars', f"{metrics.get('cars', 0):,}", f"{metrics.get('car_percentage', 0):.1f}%", 'Personal'],
+            ['Trucks', f"{metrics.get('trucks', 0):,}", f"{metrics.get('truck_percentage', 0):.1f}%", 'Commercial'],
+            ['Buses', f"{metrics.get('buses', 0):,}", f"{metrics.get('bus_percentage', 0):.1f}%", 'Commercial'],
+            ['Motorcycles', f"{metrics.get('motorcycles', 0):,}", f"{metrics.get('motorcycle_percentage', 0):.1f}%", 'Two-Wheeler'],
+            ['', '', '', ''],
+            ['TOTALS', '', '', ''],
+            ['Total Vehicles', f"{total_vehicles:,}", '100%', 'All Categories'],
+            ['Commercial Vehicles', f"{commercial_vehicles:,}", f"{(commercial_vehicles/total_vehicles*100 if total_vehicles > 0 else 0):.1f}%", 'Trucks + Buses'],
         ]
         
-        vehicle_table = Table(vehicle_data, colWidths=[2*inch, 1.5*inch, 1.5*inch])
+        vehicle_table = Table(vehicle_data, colWidths=[2*inch, 1.5*inch, 1.5*inch, 1.5*inch])
         vehicle_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('FONTSIZE', (0, 0), (-1, 0), 11),
             ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('BACKGROUND', (0, 1), (-1, 5), colors.beige),
+            ('BACKGROUND', (0, 6), (-1, 6), colors.HexColor('#e5e7eb')),
+            ('FONTNAME', (0, 6), (-1, 6), 'Helvetica-Bold'),
+            ('BACKGROUND', (0, 7), (-1, -1), colors.HexColor('#dbeafe')),
+            ('FONTNAME', (0, 7), (-1, -1), 'Helvetica-Bold'),
             ('GRID', (0, 0), (-1, -1), 1, colors.black)
         ]))
         

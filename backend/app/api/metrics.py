@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 import logging
 
@@ -55,7 +55,7 @@ async def get_metrics(
                 await ws_manager.broadcast({
                     "type": "recommendation",
                     "data": recommendation.dict(),
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat()
                 })
                 logger.info(f"Generated recommendation: {recommendation.type}")
         except Exception as e:
@@ -104,7 +104,7 @@ async def get_timeseries(
             "type": "kpi_update",
             "metric_name": metric_name,
             "latest_value": time_series.data_points[-1].value if time_series.data_points else 0,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
         
         return time_series

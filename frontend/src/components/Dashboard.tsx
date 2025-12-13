@@ -217,14 +217,19 @@ const Dashboard: React.FC = () => {
                 cameraId={selectedCamera}
                 cameraName={getCameraName(selectedCamera)}
                 detections={detections}
-                youtubeUrl={selectedCamera === 'cam01' ? 'https://www.youtube.com/watch?v=6dp-bvQ7RWo' : undefined}
+                youtubeUrl={
+                  selectedCamera === 'cam01' ? 'https://www.youtube.com/watch?v=6dp-bvQ7RWo' :
+                  selectedCamera === 'cam02' ? 'https://www.youtube.com/watch?v=y-Os52eW2rg' :
+                  selectedCamera === 'cam03' ? 'https://www.youtube.com/watch?v=y-Os52eW2rg' :
+                  undefined
+                }
                 onAnalysisComplete={(results) => setLatestAnalysis(results)}
               />
             </div>
           </div>
 
           {/* Live Stream Statistics */}
-          {selectedCamera === 'cam01' && (
+          {(selectedCamera === 'cam01' || selectedCamera === 'cam02' || selectedCamera === 'cam03') && (
             <div className="mb-8">
               <LiveStreamStats cameraId={selectedCamera} latestAnalysis={latestAnalysis} />
             </div>

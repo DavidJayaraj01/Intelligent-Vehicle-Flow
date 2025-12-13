@@ -35,24 +35,43 @@ const Analytics: React.FC = () => {
   const [totalVehicles, setTotalVehicles] = useState(0);
   const [vehiclesByType, setVehiclesByType] = useState<any>({});
   const [peakHourData, setPeakHourData] = useState<any[]>([]);
+  const [autoRefresh, setAutoRefresh] = useState(true);
   
   useEffect(() => {
     fetchAnalyticsData();
-  }, [selectedCamera]);
+    
+    // Auto-refresh every 30 seconds
+    if (autoRefresh) {
+      const interval = setInterval(() => {
+        fetchAnalyticsData();
+      }, 30000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [selectedCamera, autoRefresh]);
   
   const fetchAnalyticsData = async () => {
     setLoading(true);
     try {
       // Fetch all events for the selected camera
-      const response = await getEvents({ camera_id: selectedCamera, limit: 10000 });
+      const response = await getEvents({ camera_id: selectedCamera, limit: 50000 });
       const events = response.data;
       
-      // Calculate total vehicles
-      setTotalVehicles(events.length);
+      // Filter for TODAY's events only
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayEvents = events.filter((event: any) => {
+        const eventDate = new Date(event.timestamp);
+        eventDate.setHours(0, 0, 0, 0);
+        return eventDate.getTime() === today.getTime();
+      });
+      
+      // Calculate total vehicles for today
+      setTotalVehicles(todayEvents.length);
       
       // Group by vehicle type
       const typeCount: any = {};
-      events.forEach((event: any) => {
+      todayEvents.forEach((event: any) => {
         const vehicleType = (event.class || event.class_ || 'unknown').toLowerCase();
         typeCount[vehicleType] = (typeCount[vehicleType] || 0) + 1;
       });
@@ -60,7 +79,7 @@ const Analytics: React.FC = () => {
       
       // Group by hour for peak hour analysis
       const hourlyCount: any = {};
-      events.forEach((event: any) => {
+      todayEvents.forEach((event: any) => {
         const hour = new Date(event.timestamp).getHours();
         const timeKey = `${hour.toString().padStart(2, '0')}:00`;
         hourlyCount[timeKey] = (hourlyCount[timeKey] || 0) + 1;
@@ -206,16 +225,27 @@ const Analytics: React.FC = () => {
                 Real-time insights converted from live traffic camera data
               </p>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-2"
-              onClick={handleRefresh}
-              disabled={loading}
-            >
-              <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-              Refresh Data
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                variant={autoRefresh ? "default" : "outline"}
+                size="sm"
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className="gap-2"
+              >
+                <RefreshCw className={cn("h-4 w-4", autoRefresh && "animate-spin")} />
+                {autoRefresh ? 'Auto ON' : 'Auto OFF'}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={handleRefresh}
+                disabled={loading}
+              >
+                <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+                Refresh Data
+              </Button>
+            </div>
           </div>
 
           {loading && (

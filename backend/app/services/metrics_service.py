@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.models.vehicle_event import VehicleEvent
 from app.schemas.metrics import MetricsResponse, TimeSeriesPoint, MetricsTimeSeriesResponse
 from typing import Optional, List
@@ -38,7 +38,7 @@ class MetricsService:
         """
         # Default time range: last hour
         if to_time is None:
-            to_time = datetime.utcnow()
+            to_time = datetime.now(timezone.utc)
         if from_time is None:
             from_time = to_time - timedelta(hours=1)
         
@@ -125,7 +125,7 @@ class MetricsService:
         """
         # Default time range: last hour
         if to_time is None:
-            to_time = datetime.utcnow()
+            to_time = datetime.now(timezone.utc)
         if from_time is None:
             from_time = to_time - timedelta(hours=1)
         

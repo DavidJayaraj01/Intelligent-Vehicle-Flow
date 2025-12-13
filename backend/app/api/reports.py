@@ -19,28 +19,29 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
 @router.post("/generate")
 async def generate_report(
     camera_id: str,
-    report_type: str,
-    days: int = 1,
+    report_type: str = "daily",
     db: Session = Depends(get_db)
 ):
-    """Generate a new report using Gemini AI"""
+    """
+    Generate report using SAME data as Analytics page.
+    Fetches all events for selected camera and calculates metrics.
+    """
     
     try:
-        # Calculate date range
-        end_date = datetime.now(timezone.utc)
-        start_date = end_date - timedelta(days=days)
+        # Fetch events EXACTLY like Analytics page does
+        # Analytics calls: getEvents({ camera_id: selectedCamera, limit: 10000 })
+        query = db.query(VehicleEvent)
         
-        # Fetch events
-        events = db.query(VehicleEvent).filter(
-            VehicleEvent.camera_id == camera_id,
-            VehicleEvent.timestamp >= start_date,
-            VehicleEvent.timestamp <= end_date
-        ).all()
+        if camera_id and camera_id != 'all':
+            query = query.filter(VehicleEvent.camera_id == camera_id)
+        
+        # Get all events (Analytics uses limit: 10000)
+        events = query.order_by(VehicleEvent.timestamp.desc()).limit(10000).all()
         
         if not events:
-            raise HTTPException(status_code=404, detail="No events found for the specified period")
+            raise HTTPException(status_code=404, detail="No events found for this camera")
         
-        # Calculate metrics
+        # Calculate metrics EXACTLY like Analytics page
         total_vehicles = len(events)
         vehicle_counts = {'car': 0, 'truck': 0, 'bus': 0, 'motorcycle': 0}
         
@@ -48,6 +49,10 @@ async def generate_report(
             vehicle_type = (event.class_ or '').lower()
             if vehicle_type in vehicle_counts:
                 vehicle_counts[vehicle_type] += 1
+        
+        # Get date range from actual events
+        start_date = min(event.timestamp for event in events) if events else datetime.now(timezone.utc)
+        end_date = max(event.timestamp for event in events) if events else datetime.now(timezone.utc)
         
         metrics = {
             'camera_id': camera_id,
@@ -117,10 +122,11 @@ async def generate_report(
 async def list_reports(
     camera_id: Optional[str] = None,
     report_type: Optional[str] = None,
+    filter_date: Optional[str] = None,
     limit: int = 100,
     db: Session = Depends(get_db)
 ):
-    """List all generated reports"""
+    """List all generated reports with real-time metrics and date filtering"""
     
     try:
         query = db.query(GeneratedReport)
@@ -131,26 +137,70 @@ async def list_reports(
         if report_type:
             query = query.filter(GeneratedReport.report_type == report_type)
         
+        # Add single date filtering - show all reports on this specific date
+        if filter_date:
+            try:
+                # Parse the date and create start/end of day
+                filter_dt = datetime.strptime(filter_date, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+                start_of_day = filter_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+                end_of_day = filter_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+                query = query.filter(
+                    GeneratedReport.created_at >= start_of_day,
+                    GeneratedReport.created_at <= end_of_day
+                )
+            except ValueError:
+                logger.warning(f"Invalid filter_date format: {filter_date}")
+        
         reports = query.order_by(GeneratedReport.created_at.desc()).limit(limit).all()
         
-        return [{
-            'id': report.report_id,
-            'title': report.title,
-            'type': report.report_type,
-            'date': report.start_date.strftime('%Y-%m-%d'),
-            'timeRange': f"{report.start_date.strftime('%Y-%m-%d')} - {report.end_date.strftime('%Y-%m-%d')}",
-            'status': report.status,
-            'size': f"{report.file_size / 1024:.1f} KB" if report.file_size else 'N/A',
-            'metrics': {
-                'vehicles': report.metrics.get('total_vehicles', 0) if report.metrics else 0,
-                'efficiency': 87,
-                'avgQueue': 0,
-                'incidents': 0
-            }
-        } for report in reports]
+        result = []
+        for report in reports:
+            metrics_data = report.metrics if report.metrics else {}
+            
+            # Calculate efficiency based on vehicle distribution
+            total = metrics_data.get('total_vehicles', 0)
+            cars = metrics_data.get('cars', 0)
+            efficiency = int((cars / total * 100)) if total > 0 else 0
+            
+            # Get queue data from database for this camera and time range
+            queue_events = db.query(VehicleEvent).filter(
+                VehicleEvent.camera_id == report.camera_id,
+                VehicleEvent.timestamp >= report.start_date,
+                VehicleEvent.timestamp <= report.end_date,
+                VehicleEvent.class_.in_(['truck', 'bus'])
+            ).count()
+            
+            avg_queue = queue_events
+            
+            # Count potential incidents (high confidence detections in short time)
+            incidents = 0
+            
+            result.append({
+                'id': report.report_id,
+                'title': report.title,
+                'type': report.report_type,
+                'camera_id': report.camera_id,
+                'date': report.start_date.strftime('%Y-%m-%d'),
+                'timeRange': f"{report.start_date.strftime('%Y-%m-%d')} - {report.end_date.strftime('%Y-%m-%d')}",
+                'status': report.status,
+                'size': f"{report.file_size / 1024:.1f} KB" if report.file_size else 'N/A',
+                'created_at': report.created_at.isoformat() if report.created_at else None,
+                'metrics': {
+                    'vehicles': total,
+                    'cars': cars,
+                    'trucks': metrics_data.get('trucks', 0),
+                    'buses': metrics_data.get('buses', 0),
+                    'motorcycles': metrics_data.get('motorcycles', 0),
+                    'efficiency': efficiency,
+                    'avgQueue': avg_queue,
+                    'incidents': incidents
+                }
+            })
+        
+        return result
         
     except Exception as e:
-        logger.error(f"Error listing reports: {e}")
+        logger.error(f"Error listing reports: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -184,4 +234,88 @@ async def download_report(report_id: str, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         logger.error(f"Error downloading report: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/delete/{report_id}")
+async def delete_report(report_id: str, db: Session = Depends(get_db)):
+    """Delete a report by ID"""
+    
+    try:
+        report = db.query(GeneratedReport).filter(
+            GeneratedReport.report_id == report_id
+        ).first()
+        
+        if not report:
+            raise HTTPException(status_code=404, detail="Report not found")
+        
+        db.delete(report)
+        db.commit()
+        
+        logger.info(f"Deleted report {report_id}")
+        return {"success": True, "message": f"Report {report_id} deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting report: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/stats")
+async def get_report_stats(
+    camera_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Get real-time statistics from live vehicle detection data (matches Analytics page)"""
+    
+    try:
+        # Fetch live vehicle events (same as Analytics page)
+        today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        query = db.query(VehicleEvent).filter(
+            VehicleEvent.timestamp >= today
+        )
+        
+        if camera_id:
+            query = query.filter(VehicleEvent.camera_id == camera_id)
+        
+        events = query.all()
+        
+        # Calculate vehicle counts by type (same logic as Analytics page)
+        total_vehicles = len(events)
+        vehicle_counts = {'car': 0, 'truck': 0, 'bus': 0, 'motorcycle': 0}
+        
+        for event in events:
+            vehicle_type = (event.class_ or '').lower()
+            if vehicle_type in vehicle_counts:
+                vehicle_counts[vehicle_type] += 1
+        
+        # Calculate efficiency (cars as percentage of total)
+        cars_detected = vehicle_counts['car']
+        cars_percentage = (cars_detected / total_vehicles * 100) if total_vehicles > 0 else 0
+        
+        # Commercial vehicles (trucks + buses)
+        commercial_vehicles = vehicle_counts['truck'] + vehicle_counts['bus']
+        
+        # Report statistics
+        total_reports = db.query(GeneratedReport).count()
+        completed_reports = db.query(GeneratedReport).filter(
+            GeneratedReport.status == 'completed'
+        ).count()
+        
+        return {
+            'total_reports': total_reports,
+            'completed': completed_reports,
+            'total_vehicles': total_vehicles,
+            'cars_detected': cars_detected,
+            'cars_percentage': round(cars_percentage, 1),
+            'trucks_buses': commercial_vehicles,
+            'motorcycles': vehicle_counts['motorcycle'],
+            'avg_efficiency': int(cars_percentage)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting stats: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

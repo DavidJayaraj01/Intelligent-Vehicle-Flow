@@ -7,6 +7,7 @@ import {
   FileText,
   RefreshCw,
   Calendar,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,146 +35,96 @@ interface Report {
 
 const Reports: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [selectedCamera, setSelectedCamera] = useState<string>('cam01');
+  const [selectedCamera, setSelectedCamera] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterDate, setFilterDate] = useState('');
+  const [stats, setStats] = useState({
+    total_reports: 0,
+    completed: 0,
+    total_vehicles: 0,
+    cars_detected: 0,
+    cars_percentage: 0,
+    trucks_buses: 0,
+    motorcycles: 0,
+    avg_efficiency: 0
+  });
 
   useEffect(() => {
     generateReports();
-  }, [selectedCamera]);
+    fetchStats();
+    
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      generateReports();
+      fetchStats();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [selectedCamera, filterDate]);
+
+  const fetchStats = async () => {
+    try {
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const url = `${API_BASE}/api/v1/reports/stats${selectedCamera !== 'all' ? `?camera_id=${selectedCamera}` : ''}`;
+      const response = await fetch(url);
+      
+      if (response.ok) {
+        const statsData = await response.json();
+        setStats(statsData);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
 
   const generateReports = async () => {
     setLoading(true);
     try {
       const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (selectedCamera !== 'all') {
+        params.append('camera_id', selectedCamera);
+      }
+      
+      // Convert DD-MM-YY to YYYY-MM-DD for API
+      if (filterDate) {
+        // Only apply filter if date is complete (8 characters: DD-MM-YY)
+        if (filterDate.length === 8) {
+          const dateMatch = filterDate.match(/^(\d{2})-(\d{2})-(\d{2})$/);
+          if (dateMatch) {
+            const [_, day, month, year] = dateMatch;
+            const fullYear = parseInt(year) < 50 ? `20${year}` : `19${year}`;
+            const apiDate = `${fullYear}-${month}-${day}`;
+            params.append('filter_date', apiDate);
+            console.log(`Filtering reports for date: ${apiDate} (from input: ${filterDate})`);
+          }
+        }
+      }
+      
       // Fetch reports from backend
       const response = await fetch(
-        `${API_BASE}/api/v1/reports/list?camera_id=${selectedCamera}`
+        `${API_BASE}/api/v1/reports/list?${params.toString()}`
       );
+      
+      console.log('Fetching reports from:', `${API_BASE}/api/v1/reports/list?${params.toString()}`);
       
       if (response.ok) {
         const reportsData = await response.json();
+        console.log('Reports received:', reportsData.length, reportsData);
         setReports(reportsData);
-        setLoading(false);
-        return;
+      } else {
+        console.error('Failed to fetch reports');
+        setReports([]);
       }
-      
-      // If no reports exist, generate them from events
-      const eventsResponse = await getEvents({ camera_id: selectedCamera, limit: 10000 });
-      const events = eventsResponse.data;
-
-      // Generate reports from real data
-      const generatedReports: Report[] = [];
-
-      // Daily Business Insights Report
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
-      const todayEvents = events.filter((e: any) => 
-        new Date(e.timestamp).toISOString().split('T')[0] === todayStr
-      );
-      
-      if (todayEvents.length > 0) {
-        const vehicleTypes: any = {};
-        todayEvents.forEach((e: any) => {
-          const type = (e.class || e.class_ || 'unknown').toLowerCase();
-          vehicleTypes[type] = (vehicleTypes[type] || 0) + 1;
-        });
-
-        generatedReports.push({
-          id: `RPT-${todayStr.replace(/-/g, '')}-001`,
-          title: 'Daily Business Insights Report',
-          type: 'business-insights',
-          date: todayStr,
-          timeRange: '00:00 - 23:59',
-          status: 'completed',
-          size: `${(todayEvents.length * 0.3 / 1024).toFixed(1)} MB`,
-          metrics: {
-            vehicles: todayEvents.length,
-            avgQueue: 3.2,
-            incidents: 0,
-            efficiency: 87,
-          },
-        });
-      }
-
-      // Peak Hour Traffic Analysis
-      const morningPeakEvents = events.filter((e: any) => {
-        const hour = new Date(e.timestamp).getHours();
-        return hour >= 7 && hour <= 9;
-      });
-
-      if (morningPeakEvents.length > 0) {
-        generatedReports.push({
-          id: `RPT-${todayStr.replace(/-/g, '')}-002`,
-          title: 'Peak Hour Traffic Analysis',
-          type: 'traffic-analysis',
-          date: todayStr,
-          timeRange: '07:00 - 09:00',
-          status: 'completed',
-          size: `${(morningPeakEvents.length * 0.3 / 1024).toFixed(1)} MB`,
-          metrics: {
-            vehicles: morningPeakEvents.length,
-            avgQueue: 4.5,
-            incidents: 0,
-            efficiency: 82,
-          },
-        });
-      }
-
-      // Emergency Response Summary (if any emergency vehicles detected)
-      const emergencyEvents = events.filter((e: any) => 
-        (e.class || e.class_ || '').toLowerCase().includes('emergency') ||
-        (e.class || e.class_ || '').toLowerCase().includes('ambulance')
-      );
-
-      generatedReports.push({
-        id: `RPT-${todayStr.replace(/-/g, '')}-003`,
-        title: 'Emergency Response Summary',
-        type: 'emergency-response',
-        date: todayStr,
-        timeRange: '00:00 - 23:59',
-        status: 'completed',
-        size: `${(emergencyEvents.length * 0.3 / 1024 || 0.1).toFixed(1)} MB`,
-        metrics: {
-          vehicles: emergencyEvents.length,
-          avgQueue: 0,
-          incidents: emergencyEvents.length,
-          efficiency: emergencyEvents.length > 0 ? 95 : 100,
-        },
-      });
-
-      // Weekly Performance Report
-      const weekAgo = new Date(today);
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      const weekEvents = events.filter((e: any) => 
-        new Date(e.timestamp) >= weekAgo
-      );
-
-      if (weekEvents.length > 0) {
-        generatedReports.push({
-          id: `RPT-${todayStr.replace(/-/g, '')}-004`,
-          title: 'Weekly Queue Performance',
-          type: 'queue-performance',
-          date: `${weekAgo.toISOString().split('T')[0]} - ${todayStr}`,
-          timeRange: 'Full Week',
-          status: 'completed',
-          size: `${(weekEvents.length * 0.3 / 1024).toFixed(1)} MB`,
-          metrics: {
-            vehicles: weekEvents.length,
-            avgQueue: 3.5,
-            incidents: Math.floor(weekEvents.length * 0.002),
-            efficiency: 85,
-          },
-        });
-      }
-
-      setReports(generatedReports);
-      setLoading(false);
     } catch (error) {
-      console.error('Error generating reports:', error);
+      console.error('Error fetching reports:', error);
+      setReports([]);
+    } finally {
       setLoading(false);
     }
   };
@@ -186,37 +137,42 @@ const Reports: React.FC = () => {
   });
 
   const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'business-insights': return 'Business';
-      case 'traffic-analysis': return 'Traffic';
-      case 'emergency-response': return 'Emergency';
-      case 'queue-performance': return 'Queue';
-      default: return type;
-    }
+    const labels: Record<string, string> = {
+      'daily': 'Daily',
+      'weekly': 'Weekly', 
+      'monthly': 'Monthly',
+      'business': 'Business',
+      'traffic': 'Traffic',
+      'emergency': 'Emergency',
+      'queue': 'Queue',
+      'business-insights': 'Business',
+      'traffic-analysis': 'Traffic',
+      'emergency-response': 'Emergency',
+      'queue-performance': 'Queue'
+    };
+    return labels[type] || type;
   };
 
-  const handleGenerateReport = async (reportType: string) => {
+  const handleGenerateReport = async () => {
     try {
       const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${API_BASE}/api/v1/reports/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          camera_id: selectedCamera,
-          report_type: reportType,
-          days: 1
-        })
-      });
+      
+      // Use same query as Analytics page - just pass camera_id
+      const url = `${API_BASE}/api/v1/reports/generate?camera_id=${selectedCamera}&report_type=daily`;
+      const response = await fetch(url, { method: 'POST' });
 
       if (response.ok) {
-        alert('Report generated successfully!');
-        generateReports(); // Refresh the list
+        const result = await response.json();
+        alert(`✅ Report ${result.report_id} generated!\n\nData from Analytics:\nTotal: ${result.metrics.total_vehicles.toLocaleString()}\nCars: ${result.metrics.cars.toLocaleString()} (${result.metrics.car_percentage.toFixed(1)}%)\nTrucks: ${result.metrics.trucks.toLocaleString()}\nBuses: ${result.metrics.buses.toLocaleString()}\nMotorcycles: ${result.metrics.motorcycles.toLocaleString()}`);
+        generateReports();
+        fetchStats();
       } else {
-        alert('Failed to generate report');
+        const error = await response.json();
+        alert(`Failed: ${error.detail || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error generating report:', error);
-      alert('Error generating report');
+      alert('Error generating report.');
     }
   };
 
@@ -241,6 +197,28 @@ const Reports: React.FC = () => {
     } catch (error) {
       console.error('Error downloading report:', error);
       alert('Error downloading report');
+    }
+  };
+
+  const handleDelete = async (reportId: string) => {
+    if (!confirm(`Delete report ${reportId}?`)) return;
+    
+    try {
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE}/api/v1/reports/delete/${reportId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        alert(`✅ Report ${reportId} deleted`);
+        generateReports();
+        fetchStats();
+      } else {
+        alert('Failed to delete report');
+      }
+    } catch (error) {
+      console.error('Error deleting report:', error);
+      alert('Error deleting report');
     }
   };
 
@@ -278,32 +256,62 @@ const Reports: React.FC = () => {
           </div>
 
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search reports..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search reports..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+                <option value="all">All Types</option>
+                <option value="business-insights">Business Insights</option>
+                <option value="traffic-analysis">Traffic Analysis</option>
+                <option value="emergency-response">Emergency Response</option>
+                <option value="queue-performance">Queue Performance</option>
+              </Select>
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="gap-2 whitespace-nowrap"
+                onClick={handleGenerateReport}
+              >
+                <FileText className="h-4 w-4" />
+                Generate Report
+              </Button>
             </div>
-            <Select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
-              <option value="all">All Types</option>
-              <option value="business-insights">Business Insights</option>
-              <option value="traffic-analysis">Traffic Analysis</option>
-              <option value="emergency-response">Emergency Response</option>
-              <option value="queue-performance">Queue Performance</option>
-            </Select>
-            <Button 
-              variant="default" 
-              size="sm" 
-              className="gap-2 whitespace-nowrap"
-              onClick={() => handleGenerateReport('business-insights')}
-            >
-              <FileText className="h-4 w-4" />
-              Generate Report
-            </Button>
+            <div className="flex items-center gap-2 p-4 bg-secondary/30 rounded-lg">
+              <span className="text-sm font-medium text-muted-foreground">Filter by Date:</span>
+              <Input
+                type="text"
+                value={filterDate}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9-]/g, '');
+                  if (value.length <= 8) {
+                    setFilterDate(value);
+                  }
+                }}
+                placeholder="DD-MM-YY"
+                className="w-32 font-mono"
+                maxLength={8}
+              />
+              <span className="text-xs text-muted-foreground">Format: DD-MM-YY</span>
+              {filterDate && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setFilterDate('')}
+                  className="gap-1"
+                >
+                  <X className="h-4 w-4" />
+                  Clear
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Reports Table */}
@@ -385,6 +393,17 @@ const Reports: React.FC = () => {
                         >
                           <Download className="h-4 w-4" />
                         </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDelete(report.id)}
+                          title="Delete Report"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
+                          </svg>
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -394,29 +413,33 @@ const Reports: React.FC = () => {
             )}
           </div>
 
-          {/* Summary Stats */}
+          {/* Summary Stats - Live Data from Analytics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
             <div className="rounded-lg border border-border bg-card p-4">
-              <div className="text-xs font-mono text-muted-foreground mb-1">TOTAL REPORTS</div>
-              <div className="text-2xl font-bold font-mono">{reports.length}</div>
+              <div className="text-xs font-mono text-muted-foreground mb-1">TOTAL VEHICLES TODAY</div>
+              <div className="text-2xl font-bold font-mono">{stats.total_vehicles.toLocaleString()}</div>
+              <div className="text-xs text-green-400 mt-1">Live stream data</div>
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
-              <div className="text-xs font-mono text-muted-foreground mb-1">COMPLETED</div>
+              <div className="text-xs font-mono text-muted-foreground mb-1">CARS DETECTED</div>
+              <div className="text-2xl font-bold font-mono text-blue-400">
+                {stats.cars_detected.toLocaleString()}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">{stats.cars_percentage}% of total</div>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="text-xs font-mono text-muted-foreground mb-1">TRUCKS + BUSES</div>
+              <div className="text-2xl font-bold font-mono text-orange-400">
+                {stats.trucks_buses.toLocaleString()}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">Commercial vehicles</div>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="text-xs font-mono text-muted-foreground mb-1">MOTORCYCLES</div>
               <div className="text-2xl font-bold font-mono text-green-400">
-                {reports.filter(r => r.status === 'completed').length}
+                {stats.motorcycles.toLocaleString()}
               </div>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <div className="text-xs font-mono text-muted-foreground mb-1">TOTAL VEHICLES</div>
-              <div className="text-2xl font-bold font-mono">
-                {reports.reduce((sum, r) => sum + r.metrics.vehicles, 0).toLocaleString()}
-              </div>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <div className="text-xs font-mono text-muted-foreground mb-1">AVG EFFICIENCY</div>
-              <div className="text-2xl font-bold font-mono text-primary">
-                {Math.round(reports.reduce((sum, r) => sum + r.metrics.efficiency, 0) / reports.length)}%
-              </div>
+              <div className="text-xs text-muted-foreground mt-1">Two-wheelers</div>
             </div>
           </div>
         </div>

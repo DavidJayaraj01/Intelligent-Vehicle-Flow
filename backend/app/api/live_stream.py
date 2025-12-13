@@ -52,10 +52,16 @@ async def analyze_youtube_stream(request: YouTubeStreamRequest, db: Session = De
         logger.info(f"Got stream URL, opening with OpenCV...")
         
         # Open stream directly with OpenCV
-        cap = cv2.VideoCapture(stream_url)
-        
-        if not cap.isOpened():
-            raise HTTPException(status_code=400, detail="Could not open stream URL")
+        cap = None
+        try:
+            cap = cv2.VideoCapture(stream_url)
+            
+            if not cap.isOpened():
+                raise HTTPException(status_code=400, detail="Could not open stream URL")
+        except Exception as e:
+            if cap:
+                cap.release()
+            raise
         
         # Analyze video with YOLO
         detector = get_detector()
@@ -129,7 +135,15 @@ async def analyze_youtube_stream(request: YouTubeStreamRequest, db: Session = De
             
             frame_count += 1
         
-        cap.release()
+        # Release video capture with proper cleanup
+        try:
+            if cap and cap.isOpened():
+                cap.release()
+                # Give time for the stream to close properly
+                time.sleep(0.5)
+        except Exception as e:
+            # Suppress TLS socket errors during cleanup
+            logger.debug(f"Stream cleanup warning (can be ignored): {e}")
         
         processing_time = time.time() - start_time
         total_vehicles = sum(vehicle_counts.values())
@@ -153,7 +167,20 @@ async def analyze_youtube_stream(request: YouTubeStreamRequest, db: Session = De
         raise HTTPException(status_code=408, detail="Stream access timeout")
     except Exception as e:
         logger.error(f"Error analyzing stream: {str(e)}", exc_info=True)
+        # Clean up video capture on error
+        try:
+            if 'cap' in locals() and cap and cap.isOpened():
+                cap.release()
+        except:
+            pass
         raise HTTPException(status_code=500, detail=f"Error analyzing stream: {str(e)}")
     finally:
-        # Cleanup - no temp file needed with direct stream approach
-        pass
+        # Final cleanup to ensure resources are released
+        try:
+            if 'cap' in locals() and cap:
+                if cap.isOpened():
+                    cap.release()
+                cv2.destroyAllWindows()
+        except:
+            # Suppress any cleanup errors (TLS socket errors are normal when closing streams)
+            pass
