@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Calendar,
   X,
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +42,16 @@ const Reports: React.FC = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterDate, setFilterDate] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [notification, setNotification] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
   const [stats, setStats] = useState({
     total_reports: 0,
     completed: 0,
@@ -51,6 +62,14 @@ const Reports: React.FC = () => {
     motorcycles: 0,
     avg_efficiency: 0
   });
+
+  const showNotification = (message: string, severity: 'success' | 'error' | 'info' | 'warning' = 'success') => {
+    setNotification({ open: true, message, severity });
+  };
+
+  const closeNotification = () => {
+    setNotification({ ...notification, open: false });
+  };
 
   useEffect(() => {
     generateReports();
@@ -154,6 +173,14 @@ const Reports: React.FC = () => {
   };
 
   const handleGenerateReport = async () => {
+    if (!selectedCamera || selectedCamera === 'all') {
+      showNotification('Please select a specific camera to generate a report', 'warning');
+      return;
+    }
+
+    setGenerating(true);
+    showNotification('Generating professional report with business insights...', 'info');
+
     try {
       const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       
@@ -163,20 +190,33 @@ const Reports: React.FC = () => {
 
       if (response.ok) {
         const result = await response.json();
-        alert(`✅ Report ${result.report_id} generated!\n\nData from Analytics:\nTotal: ${result.metrics.total_vehicles.toLocaleString()}\nCars: ${result.metrics.cars.toLocaleString()} (${result.metrics.car_percentage.toFixed(1)}%)\nTrucks: ${result.metrics.trucks.toLocaleString()}\nBuses: ${result.metrics.buses.toLocaleString()}\nMotorcycles: ${result.metrics.motorcycles.toLocaleString()}`);
+        
+        // Show success message with key metrics
+        const message = `Report ${result.report_id} generated successfully!\n\n` +
+                       `📊 Total Vehicles: ${result.metrics.total_vehicles.toLocaleString()}\n` +
+                       `🚗 Cars: ${result.metrics.cars.toLocaleString()} (${result.metrics.car_percentage.toFixed(1)}%)\n` +
+                       `🚛 Trucks: ${result.metrics.trucks.toLocaleString()}\n` +
+                       `🚌 Buses: ${result.metrics.buses.toLocaleString()}\n` +
+                       `🏍️ Motorcycles: ${result.metrics.motorcycles.toLocaleString()}\n\n` +
+                       `Report includes business insights, charts, and recommendations!`;
+        
+        showNotification(message, 'success');
         generateReports();
         fetchStats();
       } else {
         const error = await response.json();
-        alert(`Failed: ${error.detail || 'Unknown error'}`);
+        showNotification(`Failed to generate report: ${error.detail || 'Unknown error'}`, 'error');
       }
     } catch (error) {
       console.error('Error generating report:', error);
-      alert('Error generating report.');
+      showNotification('Error generating report. Please try again.', 'error');
+    } finally {
+      setGenerating(false);
     }
   };
 
   const handleDownload = async (reportId: string) => {
+    showNotification(`Downloading report ${reportId}...`, 'info');
     try {
       const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const response = await fetch(`${API_BASE}/api/v1/reports/download/${reportId}`);
@@ -191,18 +231,20 @@ const Reports: React.FC = () => {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+        showNotification(`Report ${reportId} downloaded successfully!`, 'success');
       } else {
-        alert('Failed to download report');
+        showNotification('Failed to download report', 'error');
       }
     } catch (error) {
       console.error('Error downloading report:', error);
-      alert('Error downloading report');
+      showNotification('Error downloading report', 'error');
     }
   };
 
   const handleDelete = async (reportId: string) => {
-    if (!confirm(`Delete report ${reportId}?`)) return;
+    if (!confirm(`Are you sure you want to delete report ${reportId}? This action cannot be undone.`)) return;
     
+    showNotification(`Deleting report ${reportId}...`, 'info');
     try {
       const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const response = await fetch(`${API_BASE}/api/v1/reports/delete/${reportId}`, {
@@ -210,15 +252,15 @@ const Reports: React.FC = () => {
       });
       
       if (response.ok) {
-        alert(`✅ Report ${reportId} deleted`);
+        showNotification(`Report ${reportId} deleted successfully`, 'success');
         generateReports();
         fetchStats();
       } else {
-        alert('Failed to delete report');
+        showNotification('Failed to delete report', 'error');
       }
     } catch (error) {
       console.error('Error deleting report:', error);
-      alert('Error deleting report');
+      showNotification('Error deleting report', 'error');
     }
   };
 
@@ -255,6 +297,42 @@ const Reports: React.FC = () => {
             </Button>
           </div>
 
+          {/* Enhanced Reports Feature Banner */}
+          <div className="rounded-xl border-2 border-primary/30 bg-gradient-to-r from-primary/5 via-purple-500/5 to-emerald-500/5 p-6 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <BarChart3 className="h-6 w-6 text-primary" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-foreground mb-2">
+                  ✨ Enhanced Professional Reports Now Available
+                </h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Generate comprehensive traffic intelligence reports with advanced visualizations, deep analytics, and AI-powered insights.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    📊 5 Advanced Charts
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                    💡 16+ KPI Metrics
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/30">
+                    🎯 AI Business Insights
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/30">
+                    📈 Trend Analysis
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-pink-500/10 text-pink-400 border border-pink-500/30">
+                    🎨 Minimal Design
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Filters */}
           <div className="flex flex-col gap-4 mb-6">
             <div className="flex flex-col sm:flex-row gap-4">
@@ -279,9 +357,19 @@ const Reports: React.FC = () => {
                 size="sm" 
                 className="gap-2 whitespace-nowrap"
                 onClick={handleGenerateReport}
+                disabled={generating || !selectedCamera || selectedCamera === 'all'}
               >
-                <FileText className="h-4 w-4" />
-                Generate Report
+                {generating ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="h-4 w-4" />
+                    Generate Report
+                  </>
+                )}
               </Button>
             </div>
             <div className="flex items-center gap-2 p-4 bg-secondary/30 rounded-lg">
@@ -341,13 +429,32 @@ const Reports: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredReports.map((report) => (
+                {filteredReports.map((report) => {
+                  // Check if report is recent (within last hour)
+                  const isNew = report.created_at ? 
+                    (new Date().getTime() - new Date(report.created_at).getTime()) < 3600000 : false;
+                  
+                  return (
                   <TableRow key={report.id} className="hover:bg-muted/50">
                     <TableCell className="font-mono text-sm">{report.id}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{report.title}</span>
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{report.title}</span>
+                            {isNew && (
+                              <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white animate-pulse">
+                                NEW
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-emerald-400 font-mono">📊 5 Charts</span>
+                            <span className="text-[10px] text-blue-400 font-mono">💡 16+ Metrics</span>
+                            <span className="text-[10px] text-purple-400 font-mono">🎯 AI Insights</span>
+                          </div>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -387,9 +494,9 @@ const Reports: React.FC = () => {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-8 w-8"
+                          className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
                           onClick={() => handleDownload(report.id)}
-                          title="Download PDF"
+                          title="Download Professional PDF with Charts & Insights"
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -407,7 +514,8 @@ const Reports: React.FC = () => {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
             )}
@@ -441,6 +549,60 @@ const Reports: React.FC = () => {
               </div>
               <div className="text-xs text-muted-foreground mt-1">Two-wheelers</div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Notification Snackbar */}
+      <div 
+        className={cn(
+          "fixed bottom-6 right-6 z-50 transition-all duration-300",
+          notification.open ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"
+        )}
+      >
+        <div 
+          className={cn(
+            "rounded-lg border shadow-lg p-4 max-w-md",
+            notification.severity === 'success' && "bg-green-50 border-green-200 text-green-900",
+            notification.severity === 'error' && "bg-red-50 border-red-200 text-red-900",
+            notification.severity === 'warning' && "bg-yellow-50 border-yellow-200 text-yellow-900",
+            notification.severity === 'info' && "bg-blue-50 border-blue-200 text-blue-900"
+          )}
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              {notification.severity === 'success' && (
+                <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+              {notification.severity === 'error' && (
+                <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+              {notification.severity === 'warning' && (
+                <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              )}
+              {notification.severity === 'info' && (
+                <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium whitespace-pre-line">{notification.message}</p>
+            </div>
+            <button
+              onClick={closeNotification}
+              className="flex-shrink-0 ml-2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
       </div>

@@ -34,6 +34,12 @@ class VehicleQueueDetector:
         self.line2_crossed = set()
         self.vehicle_data = {}
         
+        # Line configuration
+        self.entry_line_orientation = 'horizontal'
+        self.exit_line_orientation = 'horizontal'
+        self.entry_line_position = 25  # percentage
+        self.exit_line_position = 85  # percentage
+        
         # Vehicle class IDs (COCO dataset)
         self.vehicle_classes = [2, 3, 5, 7]  # car, motorcycle, bus, truck
         
@@ -63,33 +69,99 @@ class VehicleQueueDetector:
         if hasattr(self, 'frame_height'):
             delattr(self, 'frame_height')
     
-    def _setup_lines(self, frame_height: int, frame_width: int):
-        """Setup boundary lines based on frame dimensions"""
+    def _setup_lines(self, frame_height: int, frame_width: int, entry_line=None, exit_line=None):
+        """
+        Setup boundary lines based on frame dimensions and custom line configuration
+        
+        Args:
+            frame_height: Height of the frame
+            frame_width: Width of the frame
+            entry_line: Dict with {orientation: 'horizontal'|'vertical', position: percentage}
+            exit_line: Dict with {orientation: 'horizontal'|'vertical', position: percentage}
+        """
         self.frame_width = frame_width
         self.frame_height = frame_height
         
-        # Define two boundary lines (horizontal lines)
-        self.line1_y = int(frame_height * 0.25)  # 25% from top - Entry line
-        self.line2_y = int(frame_height * 0.85)  # 85% from top - Exit line
+        # Configure entry line
+        if entry_line:
+            self.entry_line_orientation = entry_line.get('orientation', 'horizontal')
+            self.entry_line_position = entry_line.get('position', 25)
+        
+        # Configure exit line
+        if exit_line:
+            self.exit_line_orientation = exit_line.get('orientation', 'horizontal')
+            self.exit_line_position = exit_line.get('position', 85)
+        
+        # Calculate line coordinates based on orientation and position
+        if self.entry_line_orientation == 'horizontal':
+            self.line1_y = int(frame_height * (self.entry_line_position / 100))
+            self.line1_x = None
+        else:  # vertical
+            self.line1_x = int(frame_width * (self.entry_line_position / 100))
+            self.line1_y = None
+        
+        if self.exit_line_orientation == 'horizontal':
+            self.line2_y = int(frame_height * (self.exit_line_position / 100))
+            self.line2_x = None
+        else:  # vertical
+            self.line2_x = int(frame_width * (self.exit_line_position / 100))
+            self.line2_y = None
         
     def _check_line_crossing(self, track_id: int, center_y: int, 
-                            prev_center_y: int, center_x: int):
-        """Check if vehicle crossed any boundary line"""
+                            prev_center_y: int, center_x: int, prev_center_x: int = None):
+        """
+        Check if vehicle crossed any boundary line
+        
+        Args:
+            track_id: Unique vehicle ID
+            center_y: Current Y position
+            prev_center_y: Previous Y position
+            center_x: Current X position
+            prev_center_x: Previous X position
+        """
         tolerance = 15
         
-        # Check Line 1 crossing (entry line) - downward movement
+        # Check entry line crossing
         if track_id not in self.line1_crossed:
-            if (prev_center_y < self.line1_y - tolerance and 
-                center_y >= self.line1_y - tolerance) or \
-               (prev_center_y <= self.line1_y and center_y > self.line1_y):
+            crossed = False
+            
+            if self.entry_line_orientation == 'horizontal':
+                # Horizontal line - check Y position crossing
+                if (prev_center_y < self.line1_y - tolerance and 
+                    center_y >= self.line1_y - tolerance) or \
+                   (prev_center_y <= self.line1_y and center_y > self.line1_y):
+                    crossed = True
+            else:  # vertical
+                # Vertical line - check X position crossing
+                if prev_center_x is not None:
+                    if (prev_center_x < self.line1_x - tolerance and 
+                        center_x >= self.line1_x - tolerance) or \
+                       (prev_center_x <= self.line1_x and center_x > self.line1_x):
+                        crossed = True
+            
+            if crossed:
                 self.line1_crossed.add(track_id)
                 self.vehicle_entry_time[track_id] = time.time()
                 
-        # Check Line 2 crossing (exit line) - downward movement
+        # Check exit line crossing
         if track_id not in self.line2_crossed:
-            if (prev_center_y < self.line2_y - tolerance and 
-                center_y >= self.line2_y - tolerance) or \
-               (prev_center_y <= self.line2_y and center_y > self.line2_y):
+            crossed = False
+            
+            if self.exit_line_orientation == 'horizontal':
+                # Horizontal line - check Y position crossing
+                if (prev_center_y < self.line2_y - tolerance and 
+                    center_y >= self.line2_y - tolerance) or \
+                   (prev_center_y <= self.line2_y and center_y > self.line2_y):
+                    crossed = True
+            else:  # vertical
+                # Vertical line - check X position crossing
+                if prev_center_x is not None:
+                    if (prev_center_x < self.line2_x - tolerance and 
+                        center_x >= self.line2_x - tolerance) or \
+                       (prev_center_x <= self.line2_x and center_x > self.line2_x):
+                        crossed = True
+            
+            if crossed:
                 self.line2_crossed.add(track_id)
                 self.vehicle_exit_time[track_id] = time.time()
                 
@@ -101,23 +173,60 @@ class VehicleQueueDetector:
     
     def _draw_boundaries(self, frame: np.ndarray) -> np.ndarray:
         """Draw the two boundary lines on the frame"""
-        # Draw zone between lines
+        # Draw zone between lines based on orientations
         overlay = frame.copy()
-        cv2.rectangle(overlay, (0, self.line1_y), 
-                     (self.frame_width, self.line2_y), (255, 255, 0), -1)
+        
+        if self.entry_line_orientation == 'horizontal' and self.exit_line_orientation == 'horizontal':
+            # Both horizontal - draw rectangle between Y coordinates
+            y1 = min(self.line1_y, self.line2_y)
+            y2 = max(self.line1_y, self.line2_y)
+            cv2.rectangle(overlay, (0, y1), (self.frame_width, y2), (255, 255, 0), -1)
+        elif self.entry_line_orientation == 'vertical' and self.exit_line_orientation == 'vertical':
+            # Both vertical - draw rectangle between X coordinates
+            x1 = min(self.line1_x, self.line2_x)
+            x2 = max(self.line1_x, self.line2_x)
+            cv2.rectangle(overlay, (x1, 0), (x2, self.frame_height), (255, 255, 0), -1)
+        else:
+            # Mixed orientations - draw two separate zones
+            if self.entry_line_orientation == 'horizontal':
+                cv2.rectangle(overlay, (0, self.line1_y - 5), 
+                            (self.frame_width, self.line1_y + 5), (255, 255, 0), -1)
+            else:
+                cv2.rectangle(overlay, (self.line1_x - 5, 0), 
+                            (self.line1_x + 5, self.frame_height), (255, 255, 0), -1)
+            
+            if self.exit_line_orientation == 'horizontal':
+                cv2.rectangle(overlay, (0, self.line2_y - 5), 
+                            (self.frame_width, self.line2_y + 5), (255, 255, 0), -1)
+            else:
+                cv2.rectangle(overlay, (self.line2_x - 5, 0), 
+                            (self.line2_x + 5, self.frame_height), (255, 255, 0), -1)
+        
         cv2.addWeighted(overlay, 0.1, frame, 0.9, 0, frame)
         
-        # Line 1 (Entry) - Green
-        cv2.line(frame, (0, self.line1_y), (self.frame_width, self.line1_y),
-                (0, 255, 0), 4)
-        cv2.putText(frame, f"ENTRY (Y={self.line1_y})", (10, self.line1_y - 10),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        # Draw entry line (Line 1) - Green
+        if self.entry_line_orientation == 'horizontal':
+            cv2.line(frame, (0, self.line1_y), (self.frame_width, self.line1_y),
+                    (0, 255, 0), 4)
+            cv2.putText(frame, f"ENTRY (Y={self.line1_y})", (10, self.line1_y - 10),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        else:  # vertical
+            cv2.line(frame, (self.line1_x, 0), (self.line1_x, self.frame_height),
+                    (0, 255, 0), 4)
+            cv2.putText(frame, f"ENTRY (X={self.line1_x})", (self.line1_x + 10, 30),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         
-        # Line 2 (Exit) - Red
-        cv2.line(frame, (0, self.line2_y), (self.frame_width, self.line2_y),
-                (0, 0, 255), 4)
-        cv2.putText(frame, f"EXIT (Y={self.line2_y})", (10, self.line2_y + 30),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        # Draw exit line (Line 2) - Red
+        if self.exit_line_orientation == 'horizontal':
+            cv2.line(frame, (0, self.line2_y), (self.frame_width, self.line2_y),
+                    (0, 0, 255), 4)
+            cv2.putText(frame, f"EXIT (Y={self.line2_y})", (10, self.line2_y + 30),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        else:  # vertical
+            cv2.line(frame, (self.line2_x, 0), (self.line2_x, self.frame_height),
+                    (0, 0, 255), 4)
+            cv2.putText(frame, f"EXIT (X={self.line2_x})", (self.line2_x + 10, 60),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         
         return frame
     
@@ -193,10 +302,12 @@ class VehicleQueueDetector:
                         'first_seen': time.time()
                     }
                 self.vehicle_data[track_id]['last_y'] = center_y
+                self.vehicle_data[track_id]['last_x'] = center_x
                 
                 # Get previous position
                 track = self.track_history[track_id]
                 prev_center_y = track[-1][1] if track else center_y
+                prev_center_x = track[-1][0] if track else center_x
                 
                 # Update track history
                 track.append((center_x, center_y))
@@ -204,7 +315,7 @@ class VehicleQueueDetector:
                     track.pop(0)
                 
                 # Check line crossing
-                self._check_line_crossing(track_id, center_y, prev_center_y, center_x)
+                self._check_line_crossing(track_id, center_y, prev_center_y, center_x, prev_center_x)
                 
                 # Draw bounding box
                 x1 = int(center_x - w / 2)
@@ -254,13 +365,16 @@ class VehicleQueueDetector:
         
         return frame
     
-    def process_video(self, video_path: str, output_path: Optional[str] = None) -> Dict:
+    def process_video(self, video_path: str, output_path: Optional[str] = None, 
+                     entry_line: dict = None, exit_line: dict = None) -> Dict:
         """
         Process entire video file
         
         Args:
             video_path: Path to input video
             output_path: Optional path for output video
+            entry_line: Dict with {orientation, position} for entry line
+            exit_line: Dict with {orientation, position} for exit line
             
         Returns:
             Dictionary with statistics
@@ -269,41 +383,57 @@ class VehicleQueueDetector:
         self.reset()
         
         cap = cv2.VideoCapture(video_path)
+        out = None
         
-        if output_path:
-            fps = int(cap.get(cv2.CAP_PROP_FPS))
-            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-        
-        start_time = time.time()
-        
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-                
-            annotated_frame = self.process_frame(frame)
+        try:
+            # Get first frame to set up lines with custom configuration
+            ret, first_frame = cap.read()
+            if ret:
+                self._setup_lines(first_frame.shape[0], first_frame.shape[1], entry_line, exit_line)
+                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Reset to beginning
             
             if output_path:
-                out.write(annotated_frame)
+                fps = int(cap.get(cv2.CAP_PROP_FPS))
+                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+            
+            start_time = time.time()
+            
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                    
+                annotated_frame = self.process_frame(frame)
+                
+                if output_path and out is not None:
+                    out.write(annotated_frame)
+            
+            processing_time = time.time() - start_time
+            
+            return self._get_statistics(processing_time)
         
-        processing_time = time.time() - start_time
-        
-        cap.release()
-        if output_path:
-            out.release()
-        
-        return self._get_statistics(processing_time)
+        finally:
+            # Ensure resources are properly released
+            if cap is not None:
+                cap.release()
+            if out is not None:
+                out.release()
+            # Small delay to ensure Windows releases file handles
+            time.sleep(0.1)
     
-    def process_image(self, image_path: str, output_path: Optional[str] = None) -> Dict:
+    def process_image(self, image_path: str, output_path: Optional[str] = None,
+                     entry_line: dict = None, exit_line: dict = None) -> Dict:
         """
         Process single image
         
         Args:
             image_path: Path to input image
             output_path: Optional path for output image
+            entry_line: Dict with {orientation, position} for entry line
+            exit_line: Dict with {orientation, position} for exit line
             
         Returns:
             Dictionary with statistics
@@ -314,6 +444,10 @@ class VehicleQueueDetector:
         start_time = time.time()
         
         frame = cv2.imread(image_path)
+        
+        # Setup lines with custom configuration
+        self._setup_lines(frame.shape[0], frame.shape[1], entry_line, exit_line)
+        
         annotated_frame = self.process_frame(frame)
         
         if output_path:
@@ -325,7 +459,6 @@ class VehicleQueueDetector:
     
     def _get_statistics(self, processing_time: float) -> Dict:
         """Get detection statistics"""
-        import random
         
         total_vehicles = len(self.line1_crossed)
         completed_vehicles = len(self.vehicle_queue_time)
@@ -348,24 +481,6 @@ class VehicleQueueDetector:
                 'type': vtype,
                 'queueTime': qtime
             })
-        
-        # Generate mock data if no vehicles detected (for testing/demo purposes)
-        if total_vehicles == 0:
-            total_vehicles = random.randint(15, 35)
-            in_queue = random.randint(3, 12)
-            completed_vehicles = total_vehicles - in_queue
-            avg_queue_time = round(random.uniform(25.0, 45.0), 2)
-            max_queue_time = round(avg_queue_time * random.uniform(1.5, 2.2), 2)
-            min_queue_time = round(random.uniform(5.0, 10.0), 2)
-            
-            # Generate mock vehicle details
-            vehicle_types = ['Car', 'Truck', 'Bus', 'Motorcycle']
-            for i in range(completed_vehicles):
-                vehicle_details.append({
-                    'id': random.randint(1000, 9999),
-                    'type': random.choice(vehicle_types),
-                    'queueTime': round(random.uniform(min_queue_time, max_queue_time), 2)
-                })
         
         return {
             'statistics': {

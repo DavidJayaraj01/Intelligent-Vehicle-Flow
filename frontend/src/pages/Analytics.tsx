@@ -299,15 +299,16 @@ const Analytics: React.FC = () => {
           {/* Peak Hour Chart */}
           <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
             <h2 className="text-xl font-bold mb-6 font-mono">Peak Hour Traffic Pattern</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={peakHourData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="time" 
-                  stroke="hsl(var(--muted-foreground))"
-                  style={{ fontSize: '12px' }}
-                />
-                <YAxis 
+            <div style={{ minHeight: '300px' }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={peakHourData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="time" 
+                    stroke="hsl(var(--muted-foreground))"
+                    style={{ fontSize: '12px' }}
+                  />
+                  <YAxis 
                   stroke="hsl(var(--muted-foreground))"
                   style={{ fontSize: '12px' }}
                 />
@@ -329,14 +330,16 @@ const Analytics: React.FC = () => {
                 />
               </LineChart>
             </ResponsiveContainer>
+            </div>
           </div>
 
           {/* Queue Analysis Chart */}
           <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
             <h2 className="text-xl font-bold mb-6 font-mono">Lane Performance & Queue Analysis</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={queueAnalysisData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <div style={{ minHeight: '300px' }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={queueAnalysisData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="lane" 
                   stroke="hsl(var(--muted-foreground))"
@@ -359,6 +362,7 @@ const Analytics: React.FC = () => {
                 <Bar dataKey="vehicles" fill="hsl(var(--muted-foreground))" name="Vehicles Processed" />
               </BarChart>
             </ResponsiveContainer>
+            </div>
           </div>
 
           {/* Business Insights Grid */}

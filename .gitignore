@@ -101,3 +101,7 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+# Output videos
+backend/outputs/queue/*.mp4
+backend/outputs/**/*.mp4

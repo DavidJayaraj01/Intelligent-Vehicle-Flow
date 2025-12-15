@@ -1,16 +1,17 @@
 """Queue Detection API Endpoints"""
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from pathlib import Path
 import tempfile
 import shutil
-from typing import Dict
+from typing import Dict, Optional
 import os
 import base64
 import uuid
+import json
 from datetime import datetime
 
 from app.services.queue_detector import VehicleQueueDetector
@@ -76,16 +77,38 @@ def _save_queue_detections_to_db(db: Session, results: Dict, output_filename: st
 
 
 @router.post("/detect")
-async def detect_queue(file: UploadFile = File(...), db: Session = Depends(get_db)) -> Dict:
+async def detect_queue(
+    file: UploadFile = File(...), 
+    entry_line: Optional[str] = Form(None),
+    exit_line: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
+) -> Dict:
     """
     Process uploaded video or image for queue detection
     
     Args:
         file: Uploaded video or image file
+        entry_line: JSON string with entry line configuration {orientation, position}
+        exit_line: JSON string with exit line configuration {orientation, position}
         
     Returns:
         Detection results with statistics
     """
+    # Parse line configurations
+    entry_line_config = None
+    exit_line_config = None
+    
+    try:
+        if entry_line:
+            entry_line_config = json.loads(entry_line)
+        if exit_line:
+            exit_line_config = json.loads(exit_line)
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid line configuration JSON: {str(e)}"
+        )
+    
     # Validate file type
     allowed_extensions = {'.mp4', '.avi', '.mov', '.jpg', '.jpeg', '.png'}
     file_ext = Path(file.filename).suffix.lower()
@@ -118,16 +141,20 @@ async def detect_queue(file: UploadFile = File(...), db: Session = Depends(get_d
             # Get detector instance
             queue_detector = get_detector()
             
-            # Process file
+            # Process file with custom line configuration
             if is_video:
                 result = queue_detector.process_video(
                     str(input_path),
-                    str(output_path)
+                    str(output_path),
+                    entry_line=entry_line_config,
+                    exit_line=exit_line_config
                 )
             else:
                 result = queue_detector.process_image(
                     str(input_path),
-                    str(output_path)
+                    str(output_path),
+                    entry_line=entry_line_config,
+                    exit_line=exit_line_config
                 )
             
             # Save results to database

@@ -53,7 +53,7 @@ export function RealtimeChart({ data, title = 'Vehicles Per Minute' }: RealtimeC
         </div>
       </div>
       
-      <div className="h-[300px] w-full">
+      <div className="h-[300px] w-full" style={{ minHeight: '300px' }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
             <defs>

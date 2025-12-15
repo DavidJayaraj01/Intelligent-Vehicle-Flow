@@ -9,13 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 interface Event {
@@ -85,33 +79,23 @@ export function EventTable({ events, loading = false }: EventTableProps) {
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={cameraFilter} onChange={(e) => setCameraFilter(e.target.value)}>
-              <SelectTrigger className="w-32 border-border bg-secondary text-foreground">
-                <SelectValue placeholder="Camera" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Cameras</SelectItem>
-                {cameras.map((cam) => (
-                  <SelectItem key={cam} value={cam}>
-                    {cam.toUpperCase()}
-                  </SelectItem>
-                ))}
-              </SelectContent>
+            <Select value={cameraFilter} onChange={(e) => setCameraFilter(e.target.value)} className="w-32 border-border bg-secondary text-foreground">
+              <option value="all">All Cameras</option>
+              {cameras.map((cam) => (
+                <option key={cam} value={cam}>
+                  {cam.toUpperCase()}
+                </option>
+              ))}
             </Select>
           </div>
 
-          <Select value={classFilter} onChange={(e) => setClassFilter(e.target.value)}>
-            <SelectTrigger className="w-28 border-border bg-secondary text-foreground">
-              <SelectValue placeholder="Class" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {classes.map((cls) => (
-                <SelectItem key={cls} value={cls}>
-                  {cls.charAt(0).toUpperCase() + cls.slice(1)}
-                </SelectItem>
-              ))}
-            </SelectContent>
+          <Select value={classFilter} onChange={(e) => setClassFilter(e.target.value)} className="w-28 border-border bg-secondary text-foreground">
+            <option value="all">All Types</option>
+            {classes.map((cls) => (
+              <option key={cls} value={cls}>
+                {cls.charAt(0).toUpperCase() + cls.slice(1)}
+              </option>
+            ))}
           </Select>
 
           <Button

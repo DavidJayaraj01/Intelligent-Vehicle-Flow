@@ -12,6 +12,7 @@ from app.database import get_db
 from app.models.vehicle_event import VehicleEvent
 import logging
 import uuid
+import yt_dlp
 
 logger = logging.getLogger(__name__)
 
@@ -32,24 +33,24 @@ async def analyze_youtube_stream(request: YouTubeStreamRequest, db: Session = De
     analysis_timestamp = datetime.now(timezone.utc)
     
     try:
-        # Get stream URL using yt-dlp
+        # Get stream URL using yt-dlp Python module
         logger.info(f"Getting stream URL from YouTube: {request.url}")
-        cmd_get_url = [
-            'yt-dlp',
-            '-f', 'best[ext=mp4]/best',
-            '--get-url',
-            '--no-playlist',
-            request.url
-        ]
         
-        result_url = subprocess.run(cmd_get_url, capture_output=True, text=True, timeout=30)
+        ydl_opts = {
+            'format': 'best[ext=mp4]/best',
+            'quiet': True,
+            'no_warnings': True,
+            'no_playlist': True,
+        }
         
-        if result_url.returncode != 0:
-            logger.error(f"yt-dlp error getting URL: {result_url.stderr}")
-            raise HTTPException(status_code=400, detail="Failed to get stream URL")
-        
-        stream_url = result_url.stdout.strip()
-        logger.info(f"Got stream URL, opening with OpenCV...")
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(request.url, download=False)
+                stream_url = info['url']
+                logger.info(f"Got stream URL, opening with OpenCV...")
+        except Exception as e:
+            logger.error(f"yt-dlp error getting URL: {e}")
+            raise HTTPException(status_code=400, detail=f"Failed to get stream URL: {str(e)}")
         
         # Open stream directly with OpenCV
         cap = None

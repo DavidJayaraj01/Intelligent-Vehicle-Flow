@@ -98,20 +98,35 @@ const EmergencyDetection: React.FC = () => {
         throw new Error(errorData.detail || 'Detection failed');
       }
 
-      const data: DetectionResult = await response.json();
+      const data = await response.json();
       console.log('Emergency detection response:', data);
 
-      // If video, use the video URL
+      // Construct proper result object
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      
+      const result: DetectionResult = {
+        success: data.success,
+        isVideo: data.isVideo,
+        statistics: data.statistics || {
+          detectionCounts: data.statistics?.detectionCounts || { ambulance: 0, fire_truck: 0, police_car: 0 },
+          totalDetections: data.statistics?.totalDetections || 0,
+          framesWithDetections: data.statistics?.framesWithDetections,
+          totalFrames: data.statistics?.totalFrames,
+          maxConfidence: data.statistics?.maxConfidence
+        },
+        processingTime: data.processingTime
+      };
+
+      // Handle video or image output
       if (data.isVideo && data.videoUrl) {
-        console.log('Video URL:', data.videoUrl);
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-        setResults({
-          ...data,
-          videoUrl: `${baseUrl}${data.videoUrl}`,
-        });
-      } else {
-        setResults(data);
+        // Add cache buster to ensure fresh video is loaded
+        result.videoUrl = `${baseUrl}${data.videoUrl}?t=${Date.now()}`;
+        console.log('Video URL:', result.videoUrl);
+      } else if (data.imageData) {
+        result.imageData = data.imageData;
       }
+
+      setResults(result);
     } catch (err) {
       console.error('Emergency detection error:', err);
       setError(err instanceof Error ? err.message : 'Failed to process file');
@@ -140,12 +155,22 @@ const EmergencyDetection: React.FC = () => {
   };
 
   const handleDownloadResult = () => {
-    if (results?.videoUrl || results?.imageData) {
-      const link = document.createElement('a');
-      link.href = results.videoUrl || results.imageData || '';
-      link.download = `emergency_detection_${Date.now()}.${results.isVideo ? 'mp4' : 'jpg'}`;
-      link.click();
+    if (!results) return;
+
+    const link = document.createElement('a');
+    
+    if (results.isVideo && results.videoUrl) {
+      link.href = results.videoUrl;
+      link.download = `emergency_detection_${Date.now()}.mp4`;
+    } else if (results.imageData) {
+      link.href = results.imageData;
+      link.download = `emergency_detection_${Date.now()}.jpg`;
+    } else {
+      setError('No result available to download');
+      return;
     }
+    
+    link.click();
   };
 
   const getEmergencyIcon = (type: string) => {
@@ -305,34 +330,70 @@ const EmergencyDetection: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Processed Output */}
+                  {/* Processed Output Preview */}
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Processed Output with Annotations</p>
-                    <div className="rounded-lg border border-border bg-muted/50 overflow-hidden">
-                      {results.isVideo ? (
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-muted-foreground">Processed Output with Annotations</p>
+                      <span className="text-xs bg-destructive/20 text-destructive px-2 py-1 rounded font-mono">
+                        ANNOTATED
+                      </span>
+                    </div>
+                    <div className="rounded-lg border border-destructive/30 bg-muted/50 overflow-hidden">
+                      {results.isVideo && results.videoUrl ? (
                         <div>
                           <video 
+                            key={results.videoUrl} 
                             src={results.videoUrl} 
                             controls 
-                            className="w-full max-h-[300px]"
+                            preload="metadata"
+                            className="w-full max-h-[400px] bg-black"
+                            onError={(e) => {
+                              console.error('Video load error:', e);
+                              setError('Failed to load video preview. The processed video may still be available for download.');
+                            }}
+                            onLoadedMetadata={() => {
+                              console.log('Video loaded successfully');
+                            }}
+                          >
+                            Your browser does not support the video tag.
+                          </video>
+                          <div className="p-3 bg-card/50 border-t border-border">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs text-muted-foreground">
+                                Video contains bounding boxes and labels for detected emergency vehicles
+                              </p>
+                              <a
+                                href={results.videoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-destructive hover:underline inline-flex items-center gap-1 font-medium"
+                              >
+                                Open in New Tab →
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      ) : results.imageData ? (
+                        <div>
+                          <img
+                            src={results.imageData}
+                            alt="Processed result with annotations"
+                            className="w-full max-h-[400px] object-contain bg-black"
+                            onError={(e) => {
+                              console.error('Image load error:', e);
+                              setError('Failed to load image preview');
+                            }}
                           />
-                          <div className="p-3 bg-card/50 text-center border-t border-border">
-                            <a
-                              href={results.videoUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-destructive hover:underline"
-                            >
-                              Open Video in New Tab →
-                            </a>
+                          <div className="p-3 bg-card/50 border-t border-border">
+                            <p className="text-xs text-muted-foreground text-center">
+                              Image contains bounding boxes and labels for detected emergency vehicles
+                            </p>
                           </div>
                         </div>
                       ) : (
-                        <img
-                          src={results.imageData}
-                          alt="Processed result"
-                          className="w-full"
-                        />
+                        <div className="flex items-center justify-center h-[200px] text-muted-foreground">
+                          <p>No preview available</p>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -357,7 +418,7 @@ const EmergencyDetection: React.FC = () => {
               <div className="rounded-lg border border-border bg-card p-6 text-center">
                 <div className="text-xs font-mono text-muted-foreground mb-2">TOTAL DETECTIONS</div>
                 <div className="text-4xl font-bold text-destructive font-mono">
-                  {results.statistics.totalDetections}
+                  {results.statistics.totalDetections || 0}
                 </div>
               </div>
               <div className="rounded-lg border border-border bg-card p-6 text-center">
@@ -374,7 +435,7 @@ const EmergencyDetection: React.FC = () => {
             <div className="rounded-xl border border-border bg-card/80 backdrop-blur p-6">
               <h3 className="text-lg font-semibold mb-4">Emergency Vehicle Counts</h3>
               <div className="space-y-3">
-                {Object.entries(results.statistics.detectionCounts).map(([type, count]) => (
+                {Object.entries(results.statistics.detectionCounts || {}).map(([type, count]) => (
                   <div
                     key={type}
                     className={cn(
@@ -397,9 +458,14 @@ const EmergencyDetection: React.FC = () => {
 
               {results.isVideo && results.statistics.totalFrames && (
                 <div className="mt-4 p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">
-                    Frames with detections: {results.statistics.framesWithDetections} / {results.statistics.totalFrames}
+                  <p className="text-xs text-muted-foreground\">
+                    Frames with detections: {results.statistics.framesWithDetections || 0} / {results.statistics.totalFrames}
                   </p>
+                  {results.statistics.maxConfidence && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Max confidence: {(results.statistics.maxConfidence * 100).toFixed(1)}%
+                    </p>
+                  )}
                 </div>
               )}
             </div>

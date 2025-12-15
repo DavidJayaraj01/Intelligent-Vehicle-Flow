@@ -229,7 +229,7 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Live Stream Statistics */}
-          {(selectedCamera === 'cam01' || selectedCamera === 'cam02' || selectedCamera === 'cam03') && (
+          {latestAnalysis && (selectedCamera === 'cam01' || selectedCamera === 'cam02' || selectedCamera === 'cam03') && (
             <div className="mb-8">
               <LiveStreamStats cameraId={selectedCamera} latestAnalysis={latestAnalysis} />
             </div>
