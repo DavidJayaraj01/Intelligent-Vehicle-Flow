@@ -34,6 +34,10 @@ class VehicleQueueDetector:
         self.line2_crossed = set()
         self.vehicle_data = {}
         
+        # Frame tracking for time calculation
+        self.current_frame = 0
+        self.fps = 30  # default FPS, will be updated from video
+        
         # Line configuration
         self.entry_line_orientation = 'horizontal'
         self.exit_line_orientation = 'horizontal'
@@ -63,6 +67,7 @@ class VehicleQueueDetector:
         self.line1_crossed = set()
         self.line2_crossed = set()
         self.vehicle_data = {}
+        self.current_frame = 0
         # Reset frame dimensions to force line recalculation
         if hasattr(self, 'frame_width'):
             delattr(self, 'frame_width')
@@ -141,7 +146,7 @@ class VehicleQueueDetector:
             
             if crossed:
                 self.line1_crossed.add(track_id)
-                self.vehicle_entry_time[track_id] = time.time()
+                self.vehicle_entry_time[track_id] = self.current_frame
                 
         # Check exit line crossing
         if track_id not in self.line2_crossed:
@@ -163,13 +168,14 @@ class VehicleQueueDetector:
             
             if crossed:
                 self.line2_crossed.add(track_id)
-                self.vehicle_exit_time[track_id] = time.time()
+                self.vehicle_exit_time[track_id] = self.current_frame
                 
                 # Calculate queue time if vehicle crossed both lines
                 if track_id in self.vehicle_entry_time:
-                    queue_time = (self.vehicle_exit_time[track_id] - 
-                                self.vehicle_entry_time[track_id])
+                    frame_diff = self.vehicle_exit_time[track_id] - self.vehicle_entry_time[track_id]
+                    queue_time = frame_diff / self.fps  # Convert frames to seconds
                     self.vehicle_queue_time[track_id] = queue_time
+                    print(f"🚗 Vehicle {track_id}: Entry frame={self.vehicle_entry_time[track_id]}, Exit frame={self.vehicle_exit_time[track_id]}, Frames={frame_diff}, FPS={self.fps:.1f}, Wait time={queue_time:.1f}s")
     
     def _draw_boundaries(self, frame: np.ndarray) -> np.ndarray:
         """Draw the two boundary lines on the frame"""
@@ -337,7 +343,8 @@ class VehicleQueueDetector:
                     queue_time = self.vehicle_queue_time[track_id]
                     label += f" WAIT:{queue_time:.1f}s"
                 elif track_id in self.vehicle_entry_time and track_id not in self.vehicle_exit_time:
-                    current_time = time.time() - self.vehicle_entry_time[track_id]
+                    frame_diff = self.current_frame - self.vehicle_entry_time[track_id]
+                    current_time = frame_diff / self.fps
                     label += f" IN-Q:{current_time:.1f}s"
                 
                 # Draw label
@@ -386,6 +393,9 @@ class VehicleQueueDetector:
         out = None
         
         try:
+            # Get video FPS
+            self.fps = cap.get(cv2.CAP_PROP_FPS) or 30
+            
             # Get first frame to set up lines with custom configuration
             ret, first_frame = cap.read()
             if ret:
@@ -393,13 +403,27 @@ class VehicleQueueDetector:
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Reset to beginning
             
             if output_path:
-                fps = int(cap.get(cv2.CAP_PROP_FPS))
                 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+                
+                # Try multiple codecs for better browser compatibility
+                codecs = ['avc1', 'H264', 'X264', 'mp4v']
+                for codec in codecs:
+                    try:
+                        fourcc = cv2.VideoWriter_fourcc(*codec)
+                        out = cv2.VideoWriter(output_path, fourcc, self.fps, (width, height))
+                        if out.isOpened():
+                            break
+                    except:
+                        continue
+                
+                if not out or not out.isOpened():
+                    # Fallback to mp4v
+                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                    out = cv2.VideoWriter(output_path, fourcc, self.fps, (width, height))
             
             start_time = time.time()
+            self.current_frame = 0
             
             while True:
                 ret, frame = cap.read()
@@ -407,6 +431,7 @@ class VehicleQueueDetector:
                     break
                     
                 annotated_frame = self.process_frame(frame)
+                self.current_frame += 1
                 
                 if output_path and out is not None:
                     out.write(annotated_frame)

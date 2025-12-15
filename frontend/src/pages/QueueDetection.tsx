@@ -153,6 +153,23 @@ const QueueDetection: React.FC = () => {
         const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
         outputUrl = `${baseUrl}${data.output_path}?t=${Date.now()}`;
         console.log('Video URL:', outputUrl);
+        
+        // Verify video is accessible
+        try {
+          const testResponse = await fetch(outputUrl, { method: 'HEAD' });
+          console.log('Video accessibility test:', {
+            status: testResponse.status,
+            contentType: testResponse.headers.get('content-type'),
+            contentLength: testResponse.headers.get('content-length')
+          });
+          
+          if (!testResponse.ok) {
+            throw new Error(`Video file not accessible: ${testResponse.status}`);
+          }
+        } catch (fetchErr) {
+          console.error('Failed to verify video:', fetchErr);
+          throw new Error('Generated video file is not accessible. Please try again.');
+        }
       } else if (data.output_base64) {
         // For images, decode base64
         const byteCharacters = atob(data.output_base64);
@@ -395,15 +412,24 @@ const QueueDetection: React.FC = () => {
                             style={{ display: 'block' }}
                             onError={(e) => {
                               const target = e.target as HTMLVideoElement;
+                              const errorMessages: { [key: number]: string } = {
+                                1: 'MEDIA_ERR_ABORTED - Video download was aborted',
+                                2: 'MEDIA_ERR_NETWORK - Network error occurred',
+                                3: 'MEDIA_ERR_DECODE - Video codec not supported or decode error',
+                                4: 'MEDIA_ERR_SRC_NOT_SUPPORTED - Video format not supported by browser'
+                              };
+                              
                               console.error('Video load error:', {
                                 error: e,
                                 src: target.src,
                                 networkState: target.networkState,
                                 readyState: target.readyState,
                                 errorCode: target.error?.code,
-                                errorMessage: target.error?.message
+                                errorMessage: target.error?.message,
+                                errorDescription: errorMessages[target.error?.code || 0] || 'Unknown error'
                               });
-                              setError('Failed to load video preview. Check console for details.');
+                              
+                              setError(`Video playback failed: ${errorMessages[target.error?.code || 0] || 'Unknown error'}. Try downloading the video or opening in a new tab.`);
                             }}
                             onLoadStart={() => {
                               console.log('Video load started:', results.imageUrl);

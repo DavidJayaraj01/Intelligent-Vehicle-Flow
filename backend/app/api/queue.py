@@ -1,7 +1,7 @@
 """Queue Detection API Endpoints"""
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form, Request
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from pathlib import Path
@@ -157,6 +157,13 @@ async def detect_queue(
                     exit_line=exit_line_config
                 )
             
+            # Verify output file was created and is valid
+            if not output_path.exists():
+                raise HTTPException(status_code=500, detail="Output file was not created")
+            
+            if output_path.stat().st_size == 0:
+                raise HTTPException(status_code=500, detail="Output file is empty")
+            
             # Save results to database
             _save_queue_detections_to_db(db, result, output_filename)
             
@@ -171,6 +178,7 @@ async def detect_queue(
             if is_video:
                 response['output_file'] = output_filename
                 response['output_path'] = f"/api/v1/queue/outputs/{output_filename}"
+                print(f"✅ Video processed successfully: {output_filename} ({output_path.stat().st_size / (1024*1024):.2f} MB)")
             else:
                 # For images, encode as base64
                 with open(output_path, 'rb') as f:
@@ -187,24 +195,43 @@ async def detect_queue(
             )
 
 
+@router.head("/outputs/{filename}")
 @router.get("/outputs/{filename}")
-async def get_output_file(filename: str):
-    """Serve processed output files"""
-    file_path = OUTPUT_DIR / filename
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    # Determine media type based on file extension
-    media_type = "video/mp4" if filename.endswith('.mp4') else "image/jpeg"
-    
-    return FileResponse(
-        file_path,
-        media_type=media_type,
-        headers={
-            "Accept-Ranges": "bytes",
-            "Cache-Control": "public, max-age=3600"
-        }
-    )
+async def get_output_file(filename: str, request: Request):
+    """Serve processed output files with streaming support"""
+    try:
+        file_path = OUTPUT_DIR / filename
+        
+        # Security check - prevent directory traversal
+        if not file_path.resolve().is_relative_to(OUTPUT_DIR.resolve()):
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail=f"File not found: {filename}")
+        
+        # Check if file is readable and not empty
+        if not file_path.is_file() or file_path.stat().st_size == 0:
+            raise HTTPException(status_code=404, detail="File is empty or not accessible")
+        
+        # Determine media type based on file extension
+        media_type = "video/mp4" if filename.endswith('.mp4') else "image/jpeg"
+        
+        return FileResponse(
+            path=str(file_path.absolute()),
+            media_type=media_type,
+            filename=filename,
+            headers={
+                "Accept-Ranges": "bytes",
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Content-Disposition": f"inline; filename={filename}",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Expose-Headers": "Content-Length, Content-Range"
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error serving file: {str(e)}")
 
 
 @router.get("/health")

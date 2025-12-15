@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 from datetime import datetime
 from typing import Optional, List, Dict, Any, Union
+from decimal import Decimal
 
 
 class VehicleEventBase(BaseModel):
@@ -15,6 +16,13 @@ class VehicleEventBase(BaseModel):
     lane_id: Optional[str] = Field(None, description="Lane identifier")
     bbox: Optional[Dict[str, Union[float, int, str]]] = Field(None, description="Bounding box coordinates and metadata")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Detection confidence score")
+    
+    @field_serializer('dwell_seconds', 'confidence')
+    def serialize_decimal(self, value: Optional[Union[Decimal, float]]) -> Optional[float]:
+        """Convert Decimal to float for JSON serialization"""
+        if value is None:
+            return None
+        return float(value)
     
     class Config:
         populate_by_name = True

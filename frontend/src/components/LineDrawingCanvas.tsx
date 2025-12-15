@@ -17,39 +17,88 @@ interface LineDrawingCanvasProps {
 
 export function LineDrawingCanvas({ imageUrl, onLinesSet }: LineDrawingCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imageRef = useRef<HTMLImageElement | null>(null);
+  const imageRef = useRef<HTMLImageElement | HTMLVideoElement | null>(null);
   const [entryLine, setEntryLine] = useState<Line | null>(null);
   const [exitLine, setExitLine] = useState<Line | null>(null);
   const [currentStep, setCurrentStep] = useState<'entry' | 'exit' | 'done'>('entry');
   const [lineOrientation, setLineOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
-    const img = new Image();
-    img.src = imageUrl;
-    img.onload = () => {
-      imageRef.current = img;
-      setImageDimensions({ width: img.width, height: img.height });
-      drawCanvas();
-    };
+    setImageLoaded(false);
+    
+    // Check if it's a video or image
+    const isVideo = imageUrl.includes('video') || imageUrl.includes('.mp4') || imageUrl.includes('.avi') || imageUrl.includes('.mov');
+    
+    if (isVideo) {
+      const video = document.createElement('video');
+      video.src = imageUrl;
+      video.crossOrigin = 'anonymous';
+      video.muted = true;
+      
+      video.onloadeddata = () => {
+        // Seek to 1 second to get a frame
+        video.currentTime = 1;
+      };
+      
+      video.onseeked = () => {
+        imageRef.current = video;
+        setImageDimensions({ width: video.videoWidth, height: video.videoHeight });
+        setImageLoaded(true);
+        drawCanvas();
+      };
+      
+      video.onerror = () => {
+        console.error('Error loading video');
+      };
+    } else {
+      const img = new Image();
+      img.src = imageUrl;
+      img.crossOrigin = 'anonymous';
+      
+      img.onload = () => {
+        imageRef.current = img;
+        setImageDimensions({ width: img.width, height: img.height });
+        setImageLoaded(true);
+        drawCanvas();
+      };
+      
+      img.onerror = () => {
+        console.error('Error loading image');
+      };
+    }
   }, [imageUrl]);
 
   useEffect(() => {
-    drawCanvas();
-  }, [entryLine, exitLine, imageDimensions]);
+    if (imageLoaded) {
+      drawCanvas();
+    }
+  }, [entryLine, exitLine, imageDimensions, imageLoaded]);
 
   const drawCanvas = () => {
     const canvas = canvasRef.current;
-    if (!canvas || !imageRef.current) return;
+    if (!canvas || !imageRef.current || !imageLoaded) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Set canvas dimensions if not already set
+    if (imageDimensions.width && imageDimensions.height) {
+      canvas.width = imageDimensions.width;
+      canvas.height = imageDimensions.height;
+    }
+
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw image
-    ctx.drawImage(imageRef.current, 0, 0, canvas.width, canvas.height);
+    // Draw image or video frame
+    try {
+      ctx.drawImage(imageRef.current, 0, 0, canvas.width, canvas.height);
+    } catch (error) {
+      console.error('Error drawing image:', error);
+      return;
+    }
 
     // Draw entry line (green)
     if (entryLine) {
@@ -239,19 +288,30 @@ export function LineDrawingCanvas({ imageUrl, onLinesSet }: LineDrawingCanvasPro
         </div>
       </div>
 
-      <div className="relative rounded-lg overflow-hidden border-2 border-border">
+      <div className="relative rounded-lg overflow-hidden border-2 border-border bg-black">
+        {!imageLoaded && (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading preview...</p>
+            </div>
+          </div>
+        )}
+        
         <canvas
           ref={canvasRef}
-          width={800}
-          height={600}
+          width={imageDimensions.width || 800}
+          height={imageDimensions.height || 600}
           onClick={handleCanvasClick}
           className={cn(
-            'w-full h-auto cursor-crosshair bg-black',
-            currentStep === 'done' && 'cursor-default'
+            'w-full h-auto cursor-crosshair',
+            currentStep === 'done' && 'cursor-default',
+            !imageLoaded && 'hidden'
           )}
+          style={{ maxHeight: '600px', objectFit: 'contain' }}
         />
         
-        {currentStep !== 'done' && (
+        {currentStep !== 'done' && imageLoaded && (
           <div className="absolute top-4 right-4 px-3 py-2 rounded-md bg-black/70 border border-white/20">
             <p className="text-sm text-white font-medium">
               Click to place {currentStep.toUpperCase()} line
