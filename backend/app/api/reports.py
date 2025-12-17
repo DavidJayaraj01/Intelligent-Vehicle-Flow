@@ -204,6 +204,39 @@ async def list_reports(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/preview/{report_id}")
+async def preview_report(report_id: str, db: Session = Depends(get_db)):
+    """Preview a report's content without downloading"""
+    
+    try:
+        report = db.query(GeneratedReport).filter(
+            GeneratedReport.report_id == report_id
+        ).first()
+        
+        if not report:
+            raise HTTPException(status_code=404, detail="Report not found")
+        
+        return {
+            'report_id': report.report_id,
+            'title': report.title,
+            'report_type': report.report_type,
+            'camera_id': report.camera_id,
+            'date_range': f"{report.start_date.strftime('%Y-%m-%d %H:%M')} - {report.end_date.strftime('%Y-%m-%d %H:%M')}",
+            'summary': report.summary,
+            'full_content': report.full_content,
+            'metrics': report.metrics,
+            'status': report.status,
+            'created_at': report.created_at.isoformat() if report.created_at else None,
+            'file_size': f"{report.file_size / 1024:.1f} KB" if report.file_size else 'N/A'
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error previewing report: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/download/{report_id}")
 async def download_report(report_id: str, db: Session = Depends(get_db)):
     """Download a generated report as PDF"""
@@ -259,6 +292,109 @@ async def delete_report(report_id: str, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         logger.error(f"Error deleting report: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/generate-today")
+async def generate_today_report(
+    camera_id: str,
+    db: Session = Depends(get_db)
+):
+    """Auto-generate a new report with today's real-time data"""
+    
+    try:
+        # Get today's date range
+        today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        now = datetime.now(timezone.utc)
+        
+        # Fetch TODAY's events only
+        query = db.query(VehicleEvent).filter(
+            VehicleEvent.timestamp >= today,
+            VehicleEvent.timestamp <= now
+        )
+        
+        if camera_id and camera_id != 'all':
+            query = query.filter(VehicleEvent.camera_id == camera_id)
+        
+        events = query.order_by(VehicleEvent.timestamp.desc()).all()
+        
+        if not events:
+            raise HTTPException(status_code=404, detail="No events found for today")
+        
+        # Calculate metrics from TODAY's data
+        total_vehicles = len(events)
+        vehicle_counts = {'car': 0, 'truck': 0, 'bus': 0, 'motorcycle': 0}
+        
+        for event in events:
+            vehicle_type = (event.class_ or '').lower()
+            if vehicle_type in vehicle_counts:
+                vehicle_counts[vehicle_type] += 1
+        
+        metrics = {
+            'camera_id': camera_id,
+            'start_date': today.strftime('%Y-%m-%d %H:%M'),
+            'end_date': now.strftime('%Y-%m-%d %H:%M'),
+            'total_vehicles': total_vehicles,
+            'cars': vehicle_counts['car'],
+            'trucks': vehicle_counts['truck'],
+            'buses': vehicle_counts['bus'],
+            'motorcycles': vehicle_counts['motorcycle'],
+            'car_percentage': (vehicle_counts['car'] / total_vehicles * 100) if total_vehicles > 0 else 0,
+            'truck_percentage': (vehicle_counts['truck'] / total_vehicles * 100) if total_vehicles > 0 else 0,
+            'bus_percentage': (vehicle_counts['bus'] / total_vehicles * 100) if total_vehicles > 0 else 0,
+            'motorcycle_percentage': (vehicle_counts['motorcycle'] / total_vehicles * 100) if total_vehicles > 0 else 0,
+        }
+        
+        # Generate report content with AI
+        content = await report_generator.generate_report_content('daily', metrics, events)
+        
+        # Generate PDF
+        title = f"Daily Report - {today.strftime('%Y-%m-%d')}"
+        pdf_buffer = report_generator.generate_pdf(title, content, metrics)
+        pdf_content = pdf_buffer.getvalue()
+        
+        # Generate report ID with timestamp to ensure uniqueness
+        today_str = datetime.now().strftime('%Y%m%d')
+        today_count = db.query(GeneratedReport).filter(
+            GeneratedReport.report_id.like(f'RPT-{today_str}%')
+        ).count()
+        report_id = f"RPT-{today_str}-{today_count + 1:03d}"
+        
+        # Save to database
+        db_report = GeneratedReport(
+            report_id=report_id,
+            title=title,
+            report_type='daily',
+            camera_id=camera_id,
+            start_date=today,
+            end_date=now,
+            summary=content.get('summary', ''),
+            full_content=content.get('full_content', ''),
+            metrics=metrics,
+            pdf_content=pdf_content,
+            file_size=len(pdf_content),
+            status='completed'
+        )
+        
+        db.add(db_report)
+        db.commit()
+        db.refresh(db_report)
+        
+        logger.info(f"Generated today's report {report_id} with {total_vehicles} vehicles")
+        
+        return {
+            'success': True,
+            'report_id': report_id,
+            'title': title,
+            'metrics': metrics,
+            'message': f"Generated report with {total_vehicles} vehicles from today"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating today's report: {e}", exc_info=True)
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 

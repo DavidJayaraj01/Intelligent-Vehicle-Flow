@@ -21,11 +21,12 @@ import { getEvents } from '../services/api';
 interface Report {
   id: string;
   title: string;
-  type: 'business-insights' | 'traffic-analysis' | 'emergency-response' | 'queue-performance';
+  type: 'business-insights' | 'traffic-analysis' | 'emergency-response' | 'queue-performance' | 'daily';
   date: string;
   timeRange: string;
   status: 'completed' | 'processing' | 'failed';
   size: string;
+  created_at?: string;
   metrics: {
     vehicles: number;
     avgQueue: number;
@@ -43,6 +44,9 @@ const Reports: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [filterDate, setFilterDate] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [notification, setNotification] = useState<{
     open: boolean;
     message: string;
@@ -87,7 +91,7 @@ const Reports: React.FC = () => {
   const fetchStats = async () => {
     try {
       const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const url = `${API_BASE}/api/v1/reports/stats${selectedCamera !== 'all' ? `?camera_id=${selectedCamera}` : ''}`;
+      const url = `${API_BASE}/api/v1/reports/stats${selectedCamera !== 'all' && selectedCamera ? `?camera_id=${selectedCamera}` : ''}`;
       const response = await fetch(url);
       
       if (response.ok) {
@@ -96,6 +100,50 @@ const Reports: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
+    }
+  };
+
+  const handleRefresh = async () => {
+    // Generate a new report with today's data, then refresh the list
+    if (!selectedCamera || selectedCamera === 'all') {
+      showNotification('Please select a specific camera to generate today\'s report', 'info');
+      generateReports();
+      fetchStats();
+      return;
+    }
+
+    setLoading(true);
+    showNotification('Generating new report with today\'s real-time data...', 'info');
+
+    try {
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(
+        `${API_BASE}/api/v1/reports/generate-today?camera_id=${selectedCamera}`,
+        { method: 'POST' }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        showNotification(
+          `✓ New report generated!\n${result.metrics.total_vehicles} vehicles detected today`,
+          'success'
+        );
+      } else {
+        const error = await response.json();
+        if (error.detail?.includes('No events found')) {
+          showNotification('No vehicle data available for today yet', 'info');
+        } else {
+          showNotification('Failed to generate report', 'error');
+        }
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+      showNotification('Error generating report', 'error');
+    } finally {
+      // Always refresh the list and stats
+      await generateReports();
+      await fetchStats();
+      setLoading(false);
     }
   };
 
@@ -241,6 +289,29 @@ const Reports: React.FC = () => {
     }
   };
 
+  const handlePreview = async (reportId: string) => {
+    setPreviewLoading(true);
+    setPreviewOpen(true);
+    try {
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE}/api/v1/reports/preview/${reportId}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPreviewData(data);
+      } else {
+        showNotification('Failed to load preview', 'error');
+        setPreviewOpen(false);
+      }
+    } catch (error) {
+      console.error('Error loading preview:', error);
+      showNotification('Error loading preview', 'error');
+      setPreviewOpen(false);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
   const handleDelete = async (reportId: string) => {
     if (!confirm(`Are you sure you want to delete report ${reportId}? This action cannot be undone.`)) return;
     
@@ -289,11 +360,12 @@ const Reports: React.FC = () => {
               variant="outline" 
               size="sm" 
               className="gap-2"
-              onClick={generateReports}
+              onClick={handleRefresh}
               disabled={loading}
+              title="Generate new report with today's real-time data"
             >
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-              Refresh
+              Refresh & Generate New
             </Button>
           </div>
 
@@ -494,6 +566,15 @@ const Reports: React.FC = () => {
                         <Button 
                           variant="ghost" 
                           size="icon" 
+                          className="h-8 w-8 hover:bg-blue-500/10 hover:text-blue-400"
+                          onClick={() => handlePreview(report.id)}
+                          title="Preview Report"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
                           className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
                           onClick={() => handleDownload(report.id)}
                           title="Download Professional PDF with Charts & Insights"
@@ -606,6 +687,133 @@ const Reports: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Preview Modal */}
+      {previewOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
+          <div className="bg-card rounded-xl border border-border shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">Report Preview</h2>
+                {previewData && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {previewData.report_id} • {previewData.date_range}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setPreviewOpen(false);
+                  setPreviewData(null);
+                }}
+                className="h-10 w-10 rounded-lg hover:bg-muted flex items-center justify-center transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {previewLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+                </div>
+              ) : previewData ? (
+                <div className="space-y-6">
+                  {/* Title */}
+                  <div>
+                    <h3 className="text-xl font-bold text-foreground mb-2">{previewData.title}</h3>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span>📹 Camera: {previewData.camera_id}</span>
+                      <span>📅 {previewData.date_range}</span>
+                      <span>📄 {previewData.file_size}</span>
+                    </div>
+                  </div>
+
+                  {/* Metrics Grid */}
+                  {previewData.metrics && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="rounded-lg border border-border bg-card/50 p-4">
+                        <div className="text-xs font-mono text-muted-foreground mb-1">TOTAL VEHICLES</div>
+                        <div className="text-2xl font-bold font-mono">{previewData.metrics.total_vehicles?.toLocaleString()}</div>
+                      </div>
+                      <div className="rounded-lg border border-border bg-card/50 p-4">
+                        <div className="text-xs font-mono text-muted-foreground mb-1">CARS</div>
+                        <div className="text-2xl font-bold font-mono text-blue-400">{previewData.metrics.cars?.toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{previewData.metrics.car_percentage?.toFixed(1)}%</div>
+                      </div>
+                      <div className="rounded-lg border border-border bg-card/50 p-4">
+                        <div className="text-xs font-mono text-muted-foreground mb-1">TRUCKS</div>
+                        <div className="text-2xl font-bold font-mono text-orange-400">{previewData.metrics.trucks?.toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{previewData.metrics.truck_percentage?.toFixed(1)}%</div>
+                      </div>
+                      <div className="rounded-lg border border-border bg-card/50 p-4">
+                        <div className="text-xs font-mono text-muted-foreground mb-1">MOTORCYCLES</div>
+                        <div className="text-2xl font-bold font-mono text-green-400">{previewData.metrics.motorcycles?.toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{previewData.metrics.motorcycle_percentage?.toFixed(1)}%</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Summary */}
+                  {previewData.summary && (
+                    <div className="rounded-lg border border-border bg-card/50 p-4">
+                      <h4 className="font-bold text-foreground mb-2 flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Executive Summary
+                      </h4>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{previewData.summary}</p>
+                    </div>
+                  )}
+
+                  {/* Full Content */}
+                  {previewData.full_content && (
+                    <div className="rounded-lg border border-border bg-card/50 p-4">
+                      <h4 className="font-bold text-foreground mb-2 flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4" />
+                        Full Report Content
+                      </h4>
+                      <div className="text-sm text-muted-foreground whitespace-pre-wrap">{previewData.full_content}</div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-20 text-muted-foreground">
+                  <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <p>No preview data available</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setPreviewOpen(false);
+                  setPreviewData(null);
+                }}
+              >
+                Close
+              </Button>
+              {previewData && (
+                <Button
+                  variant="default"
+                  onClick={() => {
+                    handleDownload(previewData.report_id);
+                    setPreviewOpen(false);
+                  }}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download PDF
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -189,6 +189,47 @@ CREATE INDEX idx_audit_log_user_id ON audit_log(user_id);
 CREATE INDEX idx_audit_log_created_at ON audit_log(created_at DESC);
 
 -- =========================================================
+-- 9. GENERATED REPORTS TABLE
+-- =========================================================
+CREATE TABLE generated_reports (
+    id BIGSERIAL PRIMARY KEY,
+    report_id VARCHAR(50) UNIQUE NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    report_type VARCHAR(50) NOT NULL,
+    camera_id VARCHAR(50) NOT NULL,
+    start_date TIMESTAMPTZ NOT NULL,
+    end_date TIMESTAMPTZ NOT NULL,
+    
+    -- Report content
+    summary TEXT,
+    full_content TEXT,
+    metrics JSONB,
+    
+    -- File storage
+    pdf_content BYTEA,
+    file_size INTEGER,
+    
+    -- Metadata
+    status VARCHAR(20) DEFAULT 'completed' NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ,
+    
+    CONSTRAINT generated_reports_status_check CHECK (status IN ('pending', 'processing', 'completed', 'failed'))
+);
+
+-- Indexes
+CREATE INDEX idx_generated_reports_report_id ON generated_reports(report_id);
+CREATE INDEX idx_generated_reports_report_type ON generated_reports(report_type);
+CREATE INDEX idx_generated_reports_camera_id ON generated_reports(camera_id);
+CREATE INDEX idx_generated_reports_created_at ON generated_reports(created_at DESC);
+
+-- Trigger for generated_reports table
+CREATE TRIGGER update_generated_reports_updated_at
+    BEFORE UPDATE ON generated_reports
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- =========================================================
 -- MATERIALIZED VIEWS (For complex analytics)
 -- =========================================================
 
