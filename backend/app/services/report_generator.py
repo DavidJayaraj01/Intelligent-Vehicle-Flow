@@ -4,6 +4,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any
 from collections import Counter, defaultdict
 import logging
+from app.config import settings
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
@@ -34,7 +35,7 @@ plt.rcParams['grid.color'] = '#f0f0f0'
 plt.rcParams['grid.linewidth'] = 0.5
 
 # Configure Gemini API
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_API_KEY = settings.GEMINI_API_KEY
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
@@ -46,7 +47,7 @@ class ReportGenerator:
         self.model = None
         if GEMINI_API_KEY:
             try:
-                self.model = genai.GenerativeModel('gemini-pro')
+                self.model = genai.GenerativeModel('gemini-1.5-flash')
                 logger.info("Gemini AI model initialized successfully")
             except Exception as e:
                 logger.error(f"Failed to initialize Gemini AI: {e}")
